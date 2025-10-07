@@ -2,12 +2,46 @@
 //
 
 #include <iostream>
+#include <stdio.h>
+
+/* function to carry out one movement in the model */
+float step(float x_n, float mu)
+{
+	float x_n1 = mu * x_n * (1 - x_n);
+	return(x_n1);
+}
 
 int main()
 {
-    std::cout << "Hello World!\n";
-    printf("Testdsokjhgkjd");
+	/* initialising variables */
+	float mu = 2;
+	float x_0 = 0.9;
+	int no_of_steps = 10;
+
+	/* simulating the network */
+	float x[no_of_steps + 1] = {};
+	x[0] = x_0;
+	for (int t = 0; t < no_of_steps; t++)
+	{
+		x[t + 1] = step(x[t], mu);
+	}
+	
+	/* printing results */
+	for (int t = 0; t < no_of_steps + 1; t++)
+	{
+		std::cout << "x[" << t << "] = " << x[t] << std::endl;
+	}
+
+	system("pause");
+	return(0);
 }
+
+
+// int main()
+// {
+//     std::cout << "Hello World!\n";
+//     printf("Testdsokjhgkjd");
+// }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
 // Debug program: F5 or Debug > Start Debugging menu
