@@ -55,6 +55,12 @@ int main()
 #include <dxgi1_5.h>
 #include <tchar.h>
 
+#include "implot.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
 #ifdef _DEBUG
 #define DX12_ENABLE_DEBUG_LAYER
 #endif
@@ -176,6 +182,7 @@ int main(int, char**)
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    ImPlot::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
@@ -258,7 +265,7 @@ int main(int, char**)
         ImGui_ImplDX12_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
-
+        /*
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
         if (show_demo_window)
             ImGui::ShowDemoWindow(&show_demo_window);
@@ -283,7 +290,6 @@ int main(int, char**)
             ImGui::Text("counter = %d", counter);
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-            ImGui::End();
         }
 
         // 3. Show another simple window.
@@ -295,6 +301,32 @@ int main(int, char**)
                 show_another_window = false;
             ImGui::End();
         }
+
+        */
+
+        static float xs1[1001], ys1[1001];
+        for (int i = 0; i < 1001; ++i) {
+            xs1[i] = i * 0.001f;
+            ys1[i] = 0.5f + 0.5f * sinf(50 * (xs1[i] + (float)ImGui::GetTime() / 10));
+        }
+        static double xs2[20], ys2[20];
+        for (int i = 0; i < 20; ++i) {
+            xs2[i] = i * 1 / 19.0f;
+            ys2[i] = xs2[i] * xs2[i];
+        }
+
+        ImGui::Begin("Hello, world!");
+
+
+        ImPlot::BeginPlot("Line Plots");
+        ImPlot::SetupAxes("x", "y");
+        ImPlot::PlotLine("f(x)", xs1, ys1, 1001);
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
+        ImPlot::PlotLine("g(x)", xs2, ys2, 20, ImPlotLineFlags_Segments);
+        ImPlot::EndPlot();
+
+        ImGui::End();
+
 
         // Rendering
         ImGui::Render();
@@ -340,6 +372,7 @@ int main(int, char**)
     // Cleanup
     ImGui_ImplDX12_Shutdown();
     ImGui_ImplWin32_Shutdown();
+    ImPlot::DestroyContext();
     ImGui::DestroyContext();
 
     CleanupDeviceD3D();
