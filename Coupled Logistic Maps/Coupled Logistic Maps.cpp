@@ -1,53 +1,6 @@
 // Coupled Logistic Maps.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
-/*
-#include <iostream>
-#include "imgui.h"
-#include <stdio.h>
-#include "implot.h"
-#include "imgui_impl_dx12.h"
-#include "imgui_impl_win32.h"
-#include <math.h>
-
-
-void Demo_LinePlots() {
-    ImGui::CreateContext();
-    static float xs1[1001], ys1[1001];
-    for (int i = 0; i < 1001; ++i) {
-        xs1[i] = i * 0.001f;
-        ys1[i] = 0.5f + 0.5f * sinf(50 * (xs1[i] + (float)ImGui::GetTime() / 10));
-    }
-    static double xs2[20], ys2[20];
-    for (int i = 0; i < 20; ++i) {
-        xs2[i] = i * 1 / 19.0f;
-        ys2[i] = xs2[i] * xs2[i];
-    }
-    if (ImPlot::BeginPlot("Line Plots")) {
-        ImPlot::SetupAxes("x", "y");
-        ImPlot::PlotLine("f(x)", xs1, ys1, 1001);
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
-        ImPlot::PlotLine("g(x)", xs2, ys2, 20, ImPlotLineFlags_Segments);
-        ImPlot::EndPlot();
-    }
-    ImGui::DestroyContext();
-}
-
-
-int main()
-{
-    Demo_LinePlots();
-}
-*/
-
-// Dear ImGui: standalone example application for Windows API + DirectX 12
-
-// Learn about Dear ImGui:
-// - FAQ                  https://dearimgui.com/faq
-// - Getting Started      https://dearimgui.com/getting-started
-// - Documentation        https://dearimgui.com/docs (same as your local docs/ folder).
-// - Introduction, links and more at the top of imgui.cpp
-
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx12.h"
@@ -212,25 +165,6 @@ int main(int, char**)
     init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) { return g_pd3dSrvDescHeapAlloc.Free(cpu_handle, gpu_handle); };
     ImGui_ImplDX12_Init(&init_info);
 
-    // Before 1.91.6: our signature was using a single descriptor. From 1.92, specifying SrvDescriptorAllocFn/SrvDescriptorFreeFn will be required to benefit from new features.
-    //ImGui_ImplDX12_Init(g_pd3dDevice, APP_NUM_FRAMES_IN_FLIGHT, DXGI_FORMAT_R8G8B8A8_UNORM, g_pd3dSrvDescHeap, g_pd3dSrvDescHeap->GetCPUDescriptorHandleForHeapStart(), g_pd3dSrvDescHeap->GetGPUDescriptorHandleForHeapStart());
-
-    // Load Fonts
-    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-    // - If the file cannot be loaded, the function will return a nullptr. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-    // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
-    // - Read 'docs/FONTS.md' for more instructions and details. If you like the default font but want it to scale better, consider using the 'ProggyVector' from the same author!
-    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-    //style.FontSizeBase = 20.0f;
-    //io.Fonts->AddFontDefault();
-    //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf");
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf");
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf");
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf");
-    //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf");
-    //IM_ASSERT(font != nullptr);
-
     // Our state
     bool show_demo_window = true;
     bool show_another_window = false;
@@ -265,49 +199,13 @@ int main(int, char**)
         ImGui_ImplDX12_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
-        /*
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        if (show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
 
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
-        {
-            static float f = 0.0f;
-            static int counter = 0;
-
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
-
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-        }
-
-        // 3. Show another simple window.
-        if (show_another_window)
-        {
-            ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another window!");
-            if (ImGui::Button("Close Me"))
-                show_another_window = false;
-            ImGui::End();
-        }
-
-        */
-
-        static float xs1[1001], ys1[1001];
+        static float xs1[2002], ys1[2002];
         for (int i = 0; i < 1001; ++i) {
             xs1[i] = i * 0.001f;
             ys1[i] = 0.5f + 0.5f * sinf(50 * (xs1[i] + (float)ImGui::GetTime() / 10));
+            xs1[1001+i] = 1 - i * 0.001f;
+            ys1[1001+i] = 0.5f - 0.5f * sinf(50 * (xs1[i] + (float)ImGui::GetTime() / 10));
         }
         static double xs2[20], ys2[20];
         for (int i = 0; i < 20; ++i) {
@@ -320,7 +218,7 @@ int main(int, char**)
 
         ImPlot::BeginPlot("Line Plots");
         ImPlot::SetupAxes("x", "y");
-        ImPlot::PlotLine("f(x)", xs1, ys1, 1001);
+        ImPlot::PlotLine("f(x)", xs1, ys1, 2002);
         ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
         ImPlot::PlotLine("g(x)", xs2, ys2, 20, ImPlotLineFlags_Segments);
         ImPlot::EndPlot();
