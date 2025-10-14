@@ -136,8 +136,10 @@
     <ClCompile Include="implot.cpp" />
     <ClCompile Include="implot_demo.cpp" />
     <ClCompile Include="implot_items.cpp" />
+    <ClCompile Include="RunGraph.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Graphing.h" />
     <ClInclude Include="imconfig.h" />
     <ClInclude Include="imgui.h" />
     <ClInclude Include="imgui_impl_dx12.h" />

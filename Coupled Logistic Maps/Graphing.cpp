@@ -107,7 +107,7 @@ FrameContext* WaitForNextFrameContext();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 // Main code
-int main(int, char**)
+int Graph(void (*func)())
 {
     // Make process DPI aware and obtain main monitor scale
     ImGui_ImplWin32_EnableDpiAwareness();
@@ -116,7 +116,7 @@ int main(int, char**)
     // Create application window
     WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"ImGui Example", nullptr };
     ::RegisterClassExW(&wc);
-    HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"Dear ImGui DirectX12 Example", WS_OVERLAPPEDWINDOW, 100, 100, (int)(1280 * main_scale), (int)(800 * main_scale), nullptr, nullptr, wc.hInstance, nullptr);
+    HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"Coupled Logistic Maps", WS_OVERLAPPEDWINDOW, 100, 100, (int)(1280 * main_scale), (int)(800 * main_scale), nullptr, nullptr, wc.hInstance, nullptr);
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
@@ -198,31 +198,17 @@ int main(int, char**)
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        static float xs1[2002], ys1[2002];
-        for (int i = 0; i < 1001; ++i) {
-            xs1[i] = i * 0.001f;
-            ys1[i] = 0.5f + 0.5f * sinf(50 * (xs1[i] + (float)ImGui::GetTime() / 10));
-            xs1[1001 + i] = 1 - i * 0.001f;
-            ys1[1001 + i] = 0.5f - 0.5f * sinf(50 * (xs1[i] + (float)ImGui::GetTime() / 10));
-        }
-        static double xs2[20], ys2[20];
-        for (int i = 0; i < 20; ++i) {
-            xs2[i] = i * 1 / 19.0f;
-            ys2[i] = xs2[i] * xs2[i];
-        }
-
         ImGui::Begin("Hello, world!");
-
-
         ImPlot::BeginPlot("Line Plots");
-        ImPlot::SetupAxes("x", "y");
-        ImPlot::PlotLine("f(x)", xs1, ys1, 2002);
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
-        ImPlot::PlotLine("g(x)", xs2, ys2, 20, ImPlotLineFlags_Segments);
+
+        //Function goes here:-------------------------------------------------------------
+
+        func();
+
+        //Function end :--------------------------------------------------------------------
 
         ImPlot::EndPlot();
         ImGui::End();
-
 
         // Rendering
         ImGui::Render();
