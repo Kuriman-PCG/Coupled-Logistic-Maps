@@ -107,7 +107,7 @@ FrameContext* WaitForNextFrameContext();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 // Main code
-int Graph(void (*func)())
+int Graph(void (*func)(float*, float*, int), float* mus, float* xs, int number)
 {
     // Make process DPI aware and obtain main monitor scale
     ImGui_ImplWin32_EnableDpiAwareness();
@@ -203,7 +203,7 @@ int Graph(void (*func)())
 
         //Function goes here:-------------------------------------------------------------
 
-        func();
+        func(mus, xs, number);
 
         //Function end :--------------------------------------------------------------------
 

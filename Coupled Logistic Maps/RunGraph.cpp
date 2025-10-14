@@ -23,7 +23,8 @@ void func() {
     ImPlot::PlotScatter("Data 2", xs2, ys2, 50);
     ImPlot::PopStyleVar();
 }
-
+/*
 int main() {
     Graph(func);
 }
+*/

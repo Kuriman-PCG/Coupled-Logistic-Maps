@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <stdio.h>
+#include "implot.h"
+#include "Graphing.h"
 
 /* function to carry out one movement in the model */
 float step(float x_n, float mu)
@@ -11,88 +13,71 @@ float step(float x_n, float mu)
 	return(x_n1);
 }
 
-#include "implot.h"
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
+void func(float* mus, float* xs, int number) {
+	/*
+	ImPlot::PlotScatter("Data 1", mus, xs, number);
+	ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.05f);
+	ImPlot::PopStyleVar();
+	*/
 
-#ifdef _DEBUG
-#define DX12_ENABLE_DEBUG_LAYER
-#endif
-
-#ifdef DX12_ENABLE_DEBUG_LAYER
-#include <dxgidebug.h>
-#pragma comment(lib, "dxguid.lib")
-#endif
-
-// Config for example app
-static const int APP_NUM_FRAMES_IN_FLIGHT = 2;
-static const int APP_NUM_BACK_BUFFERS = 2;
-static const int APP_SRV_HEAP_SIZE = 64;
-
-struct FrameContext
-{
-    ID3D12CommandAllocator* CommandAllocator;
-    UINT64                      FenceValue;
-};
-
-// Simple free list based allocator
-struct ExampleDescriptorHeapAllocator
-{
-	/* initialising variables */
-	float mu = 2;
-	float x_0 = 0.9;
-	int no_of_steps = 10;
-
-	/* simulating the network */
-	float x[no_of_steps + 1] = {};
-	x[0] = x_0;
-	for (int t = 0; t < no_of_steps; t++)
-	{
-		x[t + 1] = step(x[t], mu);
-	}
-	
-	/* printing results */
-	for (int t = 0; t < no_of_steps + 1; t++)
-	{
-		std::cout << "x[" << t << "] = " << x[t] << std::endl;
+	static float xs1[1001], ys1[1001];
+	static float xs2[1001], ys2[1001];
+	float div = 1001;
+	float mu = 3.8;
+	for (int i = 0; i < 1001; ++i) {
+		xs1[i] = i * 0.001f;
+		ys1[i] = mu * xs1[i] * (1 - xs1[i]);
+		ys2[i] = (float)i/div;
 	}
 
-	system("pause");
-	return(0);
+	ImPlot::SetupAxes("x", "y");
+	ImPlot::PlotLine("f(x)", xs1, ys1, 1001);
+	ImPlot::PlotLine("g(x)", xs1, ys2, 1001);
+		
 }
 
+// Simple free list based allocator
+int main()
+{
+	float ummy[1], dumm[1];
+	Graph(func, ummy, dumm, 1);
 
-// int main()
-// {
-//     std::cout << "Hello World!\n";
-//     printf("Testdsokjhgkjd");
-// }
 
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
 
-    switch (msg)
-    {
-    case WM_SIZE:
-        if (g_pd3dDevice != nullptr && wParam != SIZE_MINIMIZED)
-        {
-            CleanupRenderTarget();
-            DXGI_SWAP_CHAIN_DESC1 desc = {};
-            g_pSwapChain->GetDesc1(&desc);
-            HRESULT result = g_pSwapChain->ResizeBuffers(0, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), desc.Format, desc.Flags);
-            assert(SUCCEEDED(result) && "Failed to resize swapchain.");
-            CreateRenderTarget();
-        }
-        return 0;
-    case WM_SYSCOMMAND:
-        if ((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu
-            return 0;
-        break;
-    case WM_DESTROY:
-        ::PostQuitMessage(0);
-        return 0;
-    }
-    return ::DefWindowProcW(hWnd, msg, wParam, lParam);
+
+	/* initialising variables */
+	/*
+	float mu_min = 3.84;
+	float mu_max = 3.86;
+	int const mu_step = 1000;
+	float x_0 = 0.9;
+	int const no_of_steps = 1000;
+	int const cutoff = 550;
+	int const number = (mu_step + 1) * (no_of_steps - cutoff - 1);
+
+	static float mus[number], xs[number];
+
+	int mudummy = 0;
+	for (float mu = mu_min; mu <= mu_max; mu += ((mu_max - mu_min) / (float) mu_step)) {
+		// simulating the network 
+		float blacklist[no_of_steps - cutoff - 1];
+		float x[no_of_steps + 1] = {};
+		x[0] = x_0;
+		for (int t = 0; t < no_of_steps; t++)
+		{
+			x[t + 1] = step(x[t], mu);
+
+			if (t > cutoff) {
+				//std::cout << "x[" << t << "] = " << x[t] << ", mu = " << mu << std::endl;
+				mus[mudummy] = mu;
+				xs[mudummy] = x[t];
+				mudummy++;
+			}
+		}
+	}
+	
+	Graph(func, mus, xs, number);
+	*/
+
+	return(0);
 }
