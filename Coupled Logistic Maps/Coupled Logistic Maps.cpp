@@ -11,7 +11,34 @@ float step(float x_n, float mu)
 	return(x_n1);
 }
 
-int main()
+#include "implot.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#ifdef _DEBUG
+#define DX12_ENABLE_DEBUG_LAYER
+#endif
+
+#ifdef DX12_ENABLE_DEBUG_LAYER
+#include <dxgidebug.h>
+#pragma comment(lib, "dxguid.lib")
+#endif
+
+// Config for example app
+static const int APP_NUM_FRAMES_IN_FLIGHT = 2;
+static const int APP_NUM_BACK_BUFFERS = 2;
+static const int APP_SRV_HEAP_SIZE = 64;
+
+struct FrameContext
+{
+    ID3D12CommandAllocator* CommandAllocator;
+    UINT64                      FenceValue;
+};
+
+// Simple free list based allocator
+struct ExampleDescriptorHeapAllocator
 {
 	/* initialising variables */
 	float mu = 2;
@@ -46,10 +73,26 @@ int main()
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
 // Debug program: F5 or Debug > Start Debugging menu
 
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
+    switch (msg)
+    {
+    case WM_SIZE:
+        if (g_pd3dDevice != nullptr && wParam != SIZE_MINIMIZED)
+        {
+            CleanupRenderTarget();
+            DXGI_SWAP_CHAIN_DESC1 desc = {};
+            g_pSwapChain->GetDesc1(&desc);
+            HRESULT result = g_pSwapChain->ResizeBuffers(0, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), desc.Format, desc.Flags);
+            assert(SUCCEEDED(result) && "Failed to resize swapchain.");
+            CreateRenderTarget();
+        }
+        return 0;
+    case WM_SYSCOMMAND:
+        if ((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu
+            return 0;
+        break;
+    case WM_DESTROY:
+        ::PostQuitMessage(0);
+        return 0;
+    }
+    return ::DefWindowProcW(hWnd, msg, wParam, lParam);
+}
