@@ -199,13 +199,19 @@ int Graph(void (*func)(float*, float*, float), float* mus, float* xs, float numb
         ImGui::NewFrame();
 
         ImGui::Begin("Hello, world!");
-        ImPlot::BeginPlot("Line Plots");
 
-        //Function goes here:-------------------------------------------------------------
+        if (number == -1.0f) {
+            ImPlot::BeginPlot("Line Plots", ImVec2(-1, 150));
+        }
+        else {
+            ImPlot::BeginPlot("Line Plots");
+        }
+
+        //Function goes here:---------------------------------------------------------------------------------------------------------------------------------------------------------
 
         func(mus, xs, number);
 
-        //Function end :--------------------------------------------------------------------
+        //Function end :--------------------------------------------------------------------------------------------------------------------------------------------------------------
 
         ImPlot::EndPlot();
         ImGui::End();

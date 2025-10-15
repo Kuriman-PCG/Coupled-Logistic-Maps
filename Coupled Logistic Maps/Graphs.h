@@ -2,3 +2,4 @@
 
 void logistic();
 void cobweb(float);
+void population();

@@ -113,3 +113,75 @@ void logistic() {
 
 	Graph(logfunc, mus, xs, number);
 }
+
+
+// utility structure for realtime plot
+struct RollingBuffer {
+	float Span;
+	ImVector<ImVec2> Data;
+	RollingBuffer() {
+		Span = 10.0f;
+		Data.reserve(2000);
+	}
+	void AddPoint(float x, float y) {
+		float xmod = fmodf(x, Span);
+		if (!Data.empty() && xmod < Data.back().x)
+			Data.shrink(0);
+		Data.push_back(ImVec2(xmod, y));
+	}
+};
+
+struct ScrollingBuffer {
+	int MaxSize;
+	int Offset;
+	ImVector<ImVec2> Data;
+	ScrollingBuffer(int max_size = 2000) {
+		MaxSize = max_size;
+		Offset = 0;
+		Data.reserve(MaxSize);
+	}
+	void AddPoint(float x, float y) {
+		if (Data.size() < MaxSize)
+			Data.push_back(ImVec2(x, y));
+		else {
+			Data[Offset] = ImVec2(x, y);
+			Offset = (Offset + 1) % MaxSize;
+		}
+	}
+	void Erase() {
+		if (Data.size() > 0) {
+			Data.shrink(0);
+			Offset = 0;
+		}
+	}
+};
+
+void popfunc(float* mus, float* xs, float number) {
+	
+	static ScrollingBuffer sdata1, sdata2;
+	static float t = 0;
+	static float history = 10.0f;
+	static float mu = 1.8f;
+	static float x = 0.6;
+
+	t += ImGui::GetIO().DeltaTime;
+	x = step(x, mu);
+	sdata2.AddPoint(t, x);
+
+	ImGui::SliderFloat("Mu", &mu, 1, 4, "%.1f");
+	ImGui::SliderFloat("History", &history, 1, 30, "%.1f s");
+
+	static ImPlotAxisFlags flags = ImPlotAxisFlags_NoTickLabels;
+
+	ImPlot::SetupAxes(nullptr, nullptr, flags, flags);
+	ImPlot::SetupAxisLimits(ImAxis_X1, t - history, t, ImGuiCond_Always);
+	ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1);
+	ImPlot::PlotLine("Population", &sdata2.Data[0].x, &sdata2.Data[0].y, sdata2.Data.size(), 0, sdata2.Offset, 2 * sizeof(float));
+}
+
+void population() {
+	float mus[3], xs[3];
+	float num = -1.0f;
+
+	Graph(popfunc, mus, xs, num);
+}

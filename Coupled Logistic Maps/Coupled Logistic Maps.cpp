@@ -7,13 +7,19 @@
 
 int main()
 {
-	bool cob = true;
+	//cobweb = 0
+	//logistic = 1
+	//population = 2
+	int mode = 2;
 
-	if (cob) {
+	if (mode == 0) {
 		float mu = 3.5;
 		cobweb(mu);
 	}
-	else {
+	if (mode == 1) {
 		logistic();
+	}
+	else {
+		population();
 	}
 }
