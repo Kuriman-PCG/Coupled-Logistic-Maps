@@ -16,40 +16,45 @@ float step(float x_n, float mu)
 	return(x_n1);
 }
 
-void cobfunc(float* mus, float* xs, float mu) {
+void cobfunc(float* mus, float* xs, float num) {
+
+	float static mu = 3.5;
 
 	static float xs1[1001], ys1[1001];
-	static float xs2[1001], ys2[1001];
 	float div = 1001;
 	for (int i = 0; i < 1001; ++i) {
 		xs1[i] = i * 0.001f;
 		ys1[i] = step(xs1[i], (float)mu);
-		std::cout << "x[" << i << "] = " << xs1[i] << ", mu = " << (float)mu << std::endl;
-		ys2[i] = (float)i / div;
+	}
+
+	float static x0 = 0.155;
+	float static xs2[41], ys2[41];
+	xs2[0] = x0;
+	ys2[0] = x0;
+
+	for (int i = 1; i < 21; i++) {
+		xs2[2 * i - 1] = xs2[2 * i - 2];
+		ys2[2 * i - 1] = step(xs2[2 * i - 2], mu);
+		xs2[2 * i] = ys2[2 * i - 1];
+		ys2[2 * i] = ys2[2 * i - 1];
 	}
 
 	ImPlot::SetupAxes("x", "y");
+	ImGui::SliderFloat("Mu", &mu, 1, 5, "%.3f");
+	ImGui::SliderFloat("x0", &x0, 0, 1, "%.3f");
 	ImPlot::PlotLine("f(x)", xs1, ys1, 1001);
-	ImPlot::PlotLine("g(x)", xs1, ys2, 1001);
-	ImPlot::PlotLine("cobweb", mus, xs, 41);
+	ImPlot::PlotLine("g(x)", xs1, xs, 1001);
+	ImPlot::PlotLine("cobweb", xs2, ys2, 41);
 }
 
 void cobweb(float mu)
 {
-	float static x0 = 0.9;
-	float static xs[41], ys[41];
-	xs[0] = x0;
-	ys[0] = x0;
-
-	for (int i = 1; i < 21; i++) {
-		xs[2 * i - 1] = xs[2 * i - 2];
-		ys[2 * i - 1] = step(xs[2 * i - 2], mu);
-		xs[2 * i] = ys[2 * i - 1];
-		ys[2 * i] = ys[2 * i - 1];
+	static float xs2[1001], ys2[1001];
+	for (int i = 0; i < 1001; ++i) {
+		ys2[i] = (float)i / 1001;
 	}
 
-	Graph(cobfunc, xs, ys, mu);
-
+	Graph(cobfunc, xs2, ys2, -1.0f);
 }
 
 
@@ -66,7 +71,7 @@ bool search(vector<float> a, float b) {
 
 void logfunc(float* mus, float* xs, float number) {
 	ImPlot::PlotScatter("Data 1", mus, xs, (int)number);
-	ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.05f);
+	ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
 	ImPlot::PopStyleVar();
 }
 

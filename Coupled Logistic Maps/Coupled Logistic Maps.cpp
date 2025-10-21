@@ -10,11 +10,10 @@ int main()
 	//cobweb = 0
 	//logistic = 1
 	//population = 2
-	int mode = 2;
+	int mode = 0;
 
 	if (mode == 0) {
-		float mu = 3.5;
-		cobweb(mu);
+		cobweb(0.5f);
 	}
 	if (mode == 1) {
 		logistic();

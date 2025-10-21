@@ -201,10 +201,10 @@ int Graph(void (*func)(float*, float*, float), float* mus, float* xs, float numb
         ImGui::Begin("Hello, world!");
 
         if (number == -1.0f) {
-            ImPlot::BeginPlot("Line Plots", ImVec2(-1, 150));
+            ImPlot::BeginPlot("Line Plots", ImVec2(-1, -50));
         }
         else {
-            ImPlot::BeginPlot("Line Plots");
+            ImPlot::BeginPlot("Line Plots", ImVec2(-1, -1));
         }
 
         //Function goes here:---------------------------------------------------------------------------------------------------------------------------------------------------------
