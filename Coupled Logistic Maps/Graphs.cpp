@@ -69,10 +69,39 @@ bool search(vector<float> a, float b) {
 	return false;
 }
 
+float sigmoid(float mu) {
+	return 1.0f / (1 + exp(-12.5f * (mu - 2.7f)));
+}
+
 void logfunc(float* mus, float* xs, float number) {
+
+	//Graphing the envelope
+
+	static float xs1[2001], ys1[2001];
+	static float ys2[2001], ys3[2001];
+	static float mu_min = 1;
+	static float mu_max = 4;
+	int const mu_step = 2000;
+
+	int i = 0;
+	for (float mu = mu_min; mu <= mu_max;  mu += ((mu_max - mu_min) / (float)mu_step)) {
+		xs1[i] = mu;
+		ys3[i] = 1 - 1/mu + sigmoid(mu)* (((mu*mu)/4) * (1 -(mu/4)) - (1 - (1/mu)));
+
+		ys1[i] = 1 - 1 / mu + sigmoid(mu) * ((mu/4) - (1 - (1 / mu)));
+		
+		++i;
+	}
+
+
+	//Logistic Map
 	ImPlot::PlotScatter("Data 1", mus, xs, (int)number);
-	ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
-	ImPlot::PopStyleVar();
+	//ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.5f);
+	ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, 1.0f);
+	//ImPlot::PopStyleVar();
+	ImPlot::PushStyleVar(ImPlotStyleVar_MarkerSize, 2.0f);
+	ImPlot::PlotLine("Top Envelope", xs1, ys1, 2001);
+	ImPlot::PlotLine("Bottom Envelope", xs1, ys3, 2001);
 }
 
 void logistic() {
@@ -80,16 +109,16 @@ void logistic() {
 	/* initialising variables */
 
 	// mu
-	float mu_min = 0;
+	float mu_min = 1;
 	float mu_max = 4;
-	int const mu_step = 2000;
+	int const mu_step = 200;
 
 	//starting value of x
 	float x_0 = 0.9;
 
 	//resolution
 	int const no_of_steps = 500;
-	int const cutoff = 200;
+	int const cutoff = 400;
 
 	//number of total points
 	int const number = (mu_step + 1) * (no_of_steps - cutoff - 1);
