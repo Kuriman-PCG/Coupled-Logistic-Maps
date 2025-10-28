@@ -78,30 +78,38 @@ void logfunc(float* mus, float* xs, float number) {
 	//Graphing the envelope
 
 	static float xs1[2001], ys1[2001];
-	static float ys2[2001], ys3[2001];
+	static float ys2[2001], ys3[2001], ys4[2001];
 	static float mu_min = 1;
 	static float mu_max = 4;
 	int const mu_step = 2000;
+	static bool sigm = false;
 
 	int i = 0;
 	for (float mu = mu_min; mu <= mu_max;  mu += ((mu_max - mu_min) / (float)mu_step)) {
 		xs1[i] = mu;
-		ys3[i] = 1 - 1/mu + sigmoid(mu)* (((mu*mu)/4) * (1 -(mu/4)) - (1 - (1/mu)));
-
-		ys1[i] = 1 - 1 / mu + sigmoid(mu) * ((mu/4) - (1 - (1 / mu)));
+		if (sigm) {
+			ys3[i] = 1 - 1 / mu + sigmoid(mu) * (((mu * mu) / 4) * (1 - (mu / 4)) - (1 - (1 / mu)));
+			ys1[i] = 1 - 1 / mu + sigmoid(mu) * ((mu / 4) - (1 - (1 / mu)));
+		}
+		else {
+			ys3[i] = ((mu * mu) / 4) * (1 - (mu / 4));
+			ys1[i] = (mu / 4);
+			ys4[i] = 1 - 1 / mu;
+		}
 		
 		++i;
 	}
 
+	ImGui::Checkbox("Sigmoid", &sigm);
 
 	//Logistic Map
 	ImPlot::PlotScatter("Data 1", mus, xs, (int)number);
-	//ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.5f);
 	ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, 1.0f);
-	//ImPlot::PopStyleVar();
 	ImPlot::PushStyleVar(ImPlotStyleVar_MarkerSize, 2.0f);
 	ImPlot::PlotLine("Top Envelope", xs1, ys1, 2001);
 	ImPlot::PlotLine("Bottom Envelope", xs1, ys3, 2001);
+	if(!sigm)
+		ImPlot::PlotLine("Line Plot", xs1, ys4, 2001);
 }
 
 void logistic() {
