@@ -4,13 +4,15 @@
 #include <iostream>
 #include <stdio.h>
 #include "Graphs.h"
+#include "gillespie.h"
 
 int main()
 {
 	//cobweb = 0
 	//logistic = 1
 	//population = 2
-	int mode = 0;
+	//gillespie = 3
+	int mode = 3;
 
 	if (mode == 0) {
 		cobweb(0.5f);
@@ -18,7 +20,10 @@ int main()
 	if (mode == 1) {
 		logistic();
 	}
-	else {
+	if (mode == 2) {
 		population();
+	}
+	if (mode == 3) {
+		algorithm();
 	}
 }

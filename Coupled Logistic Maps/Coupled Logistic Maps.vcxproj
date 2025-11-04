@@ -125,6 +125,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Coupled Logistic Maps.cpp" />
+    <ClCompile Include="gillespie.cpp" />
     <ClCompile Include="Graphing.cpp" />
     <ClCompile Include="Graphs.cpp" />
     <ClCompile Include="imgui.cpp" />
@@ -140,6 +141,7 @@
     <ClCompile Include="RunGraph.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="gillespie.h" />
     <ClInclude Include="Graphing.h" />
     <ClInclude Include="Graphs.h" />
     <ClInclude Include="imconfig.h" />
