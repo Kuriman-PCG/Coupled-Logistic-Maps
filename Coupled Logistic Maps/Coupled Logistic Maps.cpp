@@ -10,7 +10,7 @@ int main()
 	//cobweb = 0
 	//logistic = 1
 	//population = 2
-	int mode = 0;
+	int mode = 1;
 
 	if (mode == 0) {
 		cobweb(0.5f);
