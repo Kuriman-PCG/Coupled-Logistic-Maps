@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include "Graphs.h"
 #include "gillespie.h"
+#include "Coupling.h"
 
 int main()
 {
@@ -12,7 +13,8 @@ int main()
 	//logistic = 1
 	//population = 2
 	//gillespie = 3
-	int mode = 3;
+	//coupling = 4
+	int mode = 4;
 
 	if (mode == 0) {
 		cobweb(0.5f);
@@ -25,5 +27,8 @@ int main()
 	}
 	if (mode == 3) {
 		algorithm();
+	}
+	if (mode == 4) {
+		couple();
 	}
 }
