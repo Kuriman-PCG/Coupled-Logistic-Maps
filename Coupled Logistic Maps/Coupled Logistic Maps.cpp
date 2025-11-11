@@ -6,6 +6,7 @@
 #include "Graphs.h"
 #include "gillespie.h"
 #include "Coupling.h"
+#include "Matrix.h"
 
 int main()
 {
@@ -15,7 +16,7 @@ int main()
 	//gillespie = 3
 	//coupling = 4
 	//stochastic = 5
-	int mode = 5;
+	int mode = 6;
 
 	if (mode == 0) {
 		cobweb(0.5f);
@@ -35,4 +36,5 @@ int main()
 	if (mode == 5) {
 		stochasticlogistic();
 	}
+	step();
 }
