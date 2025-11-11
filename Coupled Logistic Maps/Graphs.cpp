@@ -6,6 +6,9 @@
 #include "implot.h"
 #include "Graphing.h"
 #include <vector>
+#include <random>
+#include <thread>
+#include <chrono>
 
 using namespace std;
 
@@ -189,4 +192,98 @@ void population() {
 	float num = -1.0f;
 
 	Graph(popfunc, mus, xs, num);
+}
+
+void stologfunc(float* xs, float* ts, float number) {
+
+	static ScrollingBuffer sdata1, sdata2;
+	static float xy[2] = { 0.5f, 0.5f };
+	static float r = 2;
+	static float a = 2;
+	static float b = 2;
+	static float alpha = 0.25;
+	static float t = 0;
+	static float history = 10.0f;
+	static bool constraint = false;
+	static bool coeffecient = false;
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+
+	float current_X = xy[0];
+	float current_Y = xy[1];
+	float rates[4];
+	if (!coeffecient) {
+		rates[0] = abs(r * current_X - r * current_X * current_X);
+		rates[1] = abs(r * current_Y - r * current_Y * current_Y);
+		rates[2] = alpha * current_X;
+		rates[3] = alpha * current_Y;
+	}
+	else {
+		rates[0] = abs(a * current_X - a * current_X * current_X);
+		rates[1] = abs(b * current_Y - b * current_Y * current_Y);
+		rates[2] = alpha * current_X;
+		rates[3] = alpha * current_Y;
+	}
+	float rate_sum = rates[0] + rates[1] + rates[2] + rates[3];
+
+	std::exponential_distribution<float> d(rate_sum);
+	float tau = d(gen);
+	t += tau;
+
+	std::uniform_real_distribution<> dis(0, 1);
+	float randomValue = dis(gen);
+	if (randomValue * rate_sum > 0 && randomValue * rate_sum < rates[0]) {
+		xy[0] = step(current_X, coeffecient ? a : r);
+	}
+	else if (randomValue * rate_sum > rates[0] && randomValue * rate_sum < rates[0] + rates[1]) {
+		xy[1] = step(current_Y, coeffecient ? b : r);
+	}
+	else if (randomValue * rate_sum > rates[0] + rates[1] && randomValue * rate_sum < rates[0] + rates[1] + rates[2]) {
+		xy[0] = current_X - (alpha * current_X);
+		xy[1] = current_Y + (alpha * current_X);
+	}
+	else if (randomValue * rate_sum > rates[0] + rates[1] + rates[2] && randomValue * rate_sum < rates[0] + rates[1] + rates[2] + rates[3]) {
+		xy[0] = current_X + (alpha * current_Y);
+		xy[1] = current_Y - (alpha * current_Y);
+	}
+	if (constraint) {
+		xy[0] = xy[0] < 1.0f ? xy[0] : 1.0f;
+		xy[0] = xy[0] > 0.0f ? xy[0] : 0.0f;
+		xy[1] = xy[1] < 1.0f ? xy[1] : 1.0f;
+		xy[1] = xy[1] > 0.0f ? xy[1] : 0.0f;
+	}
+
+	sdata1.AddPoint(t, xy[0]);
+	sdata2.AddPoint(t, xy[1]);
+	this_thread::sleep_for(std::chrono::milliseconds(75));
+
+	if (!coeffecient) {
+		ImGui::SliderFloat("r", &r, 0, 4, "%.2f");
+	}
+	else {
+		ImGui::SliderFloat("a", &a, 0, 4, "%.2f");
+		ImGui::SliderFloat("b", &b, 0, 4, "%.2f");
+	}
+	ImGui::SliderFloat("alpha", &alpha, 0, 1, "%.2f");
+	ImGui::SliderFloat("History", &history, 1, 30, "%.1f s");
+	if (ImGui::Button("Revive From Death")) {
+		xy[0] = 0.5f;
+		xy[1] = 0.5f;
+	} 
+	ImGui::SameLine();
+	ImGui::Checkbox("Constrain", &constraint);
+	ImGui::SameLine();
+	ImGui::Checkbox("Separate coeffecients", &coeffecient);
+
+	ImPlot::SetupAxisLimits(ImAxis_X1, t - history, t, ImGuiCond_Always);
+	ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1);
+	ImPlot::PlotLine("Population1", &sdata1.Data[0].x, &sdata1.Data[0].y, sdata1.Data.size(), 0, sdata1.Offset, 2 * sizeof(float));
+	ImPlot::PlotLine("Population2", &sdata2.Data[0].x, &sdata2.Data[0].y, sdata2.Data.size(), 0, sdata2.Offset, 2 * sizeof(float));
+}
+
+void stochasticlogistic() {
+	const int no_of_steps = -2.0f;
+	float X[3], t[3];
+	Graph(stologfunc, X, t, no_of_steps);
 }

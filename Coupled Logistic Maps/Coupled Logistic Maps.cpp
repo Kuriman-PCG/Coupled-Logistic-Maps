@@ -14,7 +14,8 @@ int main()
 	//population = 2
 	//gillespie = 3
 	//coupling = 4
-	int mode = 4;
+	//stochastic = 5
+	int mode = 5;
 
 	if (mode == 0) {
 		cobweb(0.5f);
@@ -30,5 +31,8 @@ int main()
 	}
 	if (mode == 4) {
 		couple();
+	}
+	if (mode == 5) {
+		stochasticlogistic();
 	}
 }
