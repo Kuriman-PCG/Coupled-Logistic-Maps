@@ -21,7 +21,10 @@ void piefunc(float* mus, float* xs, float num) {
 
 	using namespace boost::numeric::ublas;
 	const static int startPop = 3;
-	static float initGrowthRates[startPop] = { 2.0f, 1.5f, 1.5f };
+	static float connectivityMatrix[20][20] = {
+		{}
+	};
+	static float initGrowthRates[20] = { 3.9f, 1.5f, 2.5f, 3.0f, 1.0f, 2.0f, 3.5f, 0.5f, 0.4f, 3.9f, 0.1f, 1.0f, 1.0f, 0.5f, 3.0f, 3.0f, 3.0f, 2.45f, 2.0f };
 	static float initCapacities[startPop] = { 1.0f, 1.0f, 1.0f };
 	static vector<float> growthVector(startPop);
 	static vector<float> capacityVector(startPop);
@@ -32,6 +35,7 @@ void piefunc(float* mus, float* xs, float num) {
 	static int populationMemory = startPop;
 	static float alpha = 0.1;
 	static bool hasRun = false;
+	static bool logisticMap = false;
 
 	if (populationMemory != populations) {
 		populationMemory = populations;
@@ -46,10 +50,13 @@ void piefunc(float* mus, float* xs, float num) {
 	if (!hasRun) {
 		hasRun = true;
 		for (int i = 0; i < populations; i++) {
-			growthVector[i] = 3.0f;
+			growthVector[i] = initGrowthRates[i];
 			capacityVector[i] = 1.0f;
 			populationVector[i] = 0.3f;
 		}
+
+
+
 	}
 
 	for (int i = 0; i < populations; i++) {
@@ -57,8 +64,8 @@ void piefunc(float* mus, float* xs, float num) {
 			//Create the adjacency matrix
 			if (i == j)
 				adjacencyMatrix(i, j) = -1.0f;
-			else if (abs(i-j) == 1)
-				adjacencyMatrix(i, j) = (j == 0 || j == populations - 1 ? 1.0f : 0.5f);
+			else if (abs(i-j) == 1 || abs(i-j) == populations - 1)
+				adjacencyMatrix(i, j) = 0.5f;
 			else
 				adjacencyMatrix(i, j) = 0.0f;
 		}
@@ -68,12 +75,11 @@ void piefunc(float* mus, float* xs, float num) {
 	adjacencyMatrix = adjacencyMatrix * alpha;
 
 	static vector<float> result(populations, populations);
-	result = logisticVector + prod(adjacencyMatrix, populationVector);
-	//result = populationVector + prod(adjacencyMatrix, populationVector);
+	result = (logisticMap ? logisticVector : populationVector) + prod(adjacencyMatrix, populationVector);
 	populationVector = result;
 
 
-	//std::cout << adjacencyMatrix << std::endl;
+	std::cout << adjacencyMatrix << std::endl;
 	std::cout << populationVector << std::endl;
 
 
@@ -91,12 +97,13 @@ void piefunc(float* mus, float* xs, float num) {
 
 
 	ImGui::SetNextItemWidth(250);
-	ImGui::DragInt("Populations", &populations, 1.0F, 1, 100);
+	ImGui::DragInt("Populations", &populations, 1.0F, 1, 20);
+	ImGui::Checkbox("LogisticMap", &logisticMap);
 }
 
 void pie() {
 
-	float a[3], b[3], c = 3;
+	float a[3], b[3], c = -1.0f;
 	Graph(piefunc, a, b, c);
 }
 
