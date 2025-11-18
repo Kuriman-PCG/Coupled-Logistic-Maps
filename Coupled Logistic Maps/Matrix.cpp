@@ -6,18 +6,106 @@
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/matrix_expression.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include "implot.h"
 #include "Graphing.h"
+#include <string>
 
 void adjacency(int n) {
 
+}
+
+void piefunc(float* mus, float* xs, float num) {
+
+	static const char* labels1[] = { "Frogs","Hogs","Dogs","Logs" };
+	
+
+	using namespace boost::numeric::ublas;
+	const static int startPop = 3;
+	static float initGrowthRates[startPop] = { 2.0f, 1.5f, 1.5f };
+	static float initCapacities[startPop] = { 1.0f, 1.0f, 1.0f };
+	static vector<float> growthVector(startPop);
+	static vector<float> capacityVector(startPop);
+	static vector<float> populationVector(startPop);
+	static matrix<float> adjacencyMatrix(startPop, startPop);
+	static vector<float> logisticVector(startPop);
+	static int populations = startPop;
+	static int populationMemory = startPop;
+	static float alpha = 0.1;
+	static bool hasRun = false;
+
+	if (populationMemory != populations) {
+		populationMemory = populations;
+		growthVector.resize(populations);
+		capacityVector.resize(populations);
+		populationVector.resize(populations);
+		adjacencyMatrix.resize(populations, populations);
+		logisticVector.resize(populations);
+		hasRun = false;
+	}
+
+	if (!hasRun) {
+		hasRun = true;
+		for (int i = 0; i < populations; i++) {
+			growthVector[i] = 3.0f;
+			capacityVector[i] = 1.0f;
+			populationVector[i] = 0.3f;
+		}
+	}
+
+	for (int i = 0; i < populations; i++) {
+		for (int j = 0; j < populations; j++) {
+			//Create the adjacency matrix
+			if (i == j)
+				adjacencyMatrix(i, j) = -1.0f;
+			else if (abs(i-j) == 1)
+				adjacencyMatrix(i, j) = (j == 0 || j == populations - 1 ? 1.0f : 0.5f);
+			else
+				adjacencyMatrix(i, j) = 0.0f;
+		}
+		//Create the logistic vector
+		logisticVector[i] = growthVector[i] * populationVector[i] * (capacityVector[i] - populationVector[i]);
+	}
+	adjacencyMatrix = adjacencyMatrix * alpha;
+
+	static vector<float> result(populations, populations);
+	result = logisticVector + prod(adjacencyMatrix, populationVector);
+	//result = populationVector + prod(adjacencyMatrix, populationVector);
+	populationVector = result;
+
+
+	//std::cout << adjacencyMatrix << std::endl;
+	std::cout << populationVector << std::endl;
+
+
+	//ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoDecorations, ImPlotAxisFlags_NoDecorations);
+	//ImPlot::SetupAxesLimits(0, 1, 0, 1);
+
+	const double pi2 = 6.2829;
+	static ImPlotPieChartFlags flags = 0;
+
+	for (int i = 0; i < populations; i++) {
+		static float data[1];
+		data[0] = populationVector[i];
+		ImPlot::PlotPieChart(labels1, data, 1, populations * cos(pi2 * i / populations), populations * sin(pi2 * i / populations), 1, "%.2f", 90, flags);
+	}
+
+
+	ImGui::SetNextItemWidth(250);
+	ImGui::DragInt("Populations", &populations, 1.0F, 1, 100);
+}
+
+void pie() {
+
+	float a[3], b[3], c = 3;
+	Graph(piefunc, a, b, c);
 }
 
 void stepGraph(float* mus, float* xs, float num) {
 
 	using namespace boost::numeric::ublas;
 	const static int startPop = 3;
-	static float initGrowthRates[startPop] = { 3.0f, 2.0f, 1.5f };
-	static float initCapacities[startPop] = { 2.0f, 1.0f, 3.0f };
+	static float initGrowthRates[startPop] = { 2.0f, 1.5f, 1.5f };
+	static float initCapacities[startPop] = { 1.0f, 1.0f, 1.0f };
 	static float initPopulation[startPop] = { 0.5f, 0.5f, 0.5f };
 	static vector<float> growthVector(startPop);
 	static vector<float> capacityVector(startPop);
@@ -66,6 +154,6 @@ void stepGraph(float* mus, float* xs, float num) {
 
 void step() {
 
-	float a[3], b[3], c;
+	float a[3], b[3], c = 3;
 	Graph(stepGraph, a, b, c);
 }

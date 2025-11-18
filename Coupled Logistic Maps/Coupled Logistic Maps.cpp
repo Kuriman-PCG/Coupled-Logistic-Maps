@@ -36,5 +36,5 @@ int main()
 	if (mode == 5) {
 		stochasticlogistic();
 	}
-	step();
+	pie();
 }
