@@ -21,9 +21,18 @@ void piefunc(float* mus, float* xs, float num) {
 
 	using namespace boost::numeric::ublas;
 	const static int startPop = 3;
-	static float connectivityMatrix[20][20] = {
+	static float connectivityMatrix[20][20];
+	for (int i = 1; i < 20; i++) {
+		for (int j = 1; j < 20; j++) {
+			if (abs(i - j) == 1)
+				connectivityMatrix(i, j) = 1.0f;
+			else
+				connectivityMatrix(i, j) = 0.0f;
+		}
+	}
+	/*static float connectivityMatrix[20][20] = {
 		{}
-	};
+	};*/
 	static float initGrowthRates[20] = { 3.9f, 1.5f, 2.5f, 3.0f, 1.0f, 2.0f, 3.5f, 0.5f, 0.4f, 3.9f, 0.1f, 1.0f, 1.0f, 0.5f, 3.0f, 3.0f, 3.0f, 2.45f, 2.0f };
 	static float initCapacities[startPop] = { 1.0f, 1.0f, 1.0f };
 	static vector<float> growthVector(startPop);
@@ -62,12 +71,16 @@ void piefunc(float* mus, float* xs, float num) {
 	for (int i = 0; i < populations; i++) {
 		for (int j = 0; j < populations; j++) {
 			//Create the adjacency matrix
+			//if (i == j)
+			//	adjacencyMatrix(i, j) = -1.0f;
+			//else if (abs(i-j) == 1 || abs(i-j) == populations - 1)
+			//	adjacencyMatrix(i, j) = 0.5f;
+			//else
+			//	adjacencyMatrix(i, j) = 0.0f;
 			if (i == j)
-				adjacencyMatrix(i, j) = -1.0f;
-			else if (abs(i-j) == 1 || abs(i-j) == populations - 1)
-				adjacencyMatrix(i, j) = 0.5f;
+				adjacencyMatrix(i, j) = -1;
 			else
-				adjacencyMatrix(i, j) = 0.0f;
+				adjacencyMatrix(i, j) = connectivityMatrix(i, j) / sum(connectivityMatrix(i, ));
 		}
 		//Create the logistic vector
 		logisticVector[i] = growthVector[i] * populationVector[i] * (capacityVector[i] - populationVector[i]);
