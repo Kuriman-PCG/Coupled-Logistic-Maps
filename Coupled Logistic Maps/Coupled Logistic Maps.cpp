@@ -16,6 +16,7 @@ int main()
 	//gillespie = 3
 	//coupling = 4
 	//stochastic = 5
+	//matrix coupling = 6
 	int mode = 6;
 
 	if (mode == 0) {
@@ -36,5 +37,7 @@ int main()
 	if (mode == 5) {
 		stochasticlogistic();
 	}
-	pie();
+	if (mode == 6) {
+		matrixCoupling();
+	}
 }
