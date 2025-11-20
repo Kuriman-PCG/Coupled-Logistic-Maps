@@ -91,14 +91,7 @@ void matrixCouplingFunc(float* mus, float* xs, float num) {
 
 	const double pi2 = 6.2829;
 	static ImPlotPieChartFlags flags = 0;
-
-	//Plot the populations
-	for (int i = 0; i < populations; i++) {
-		static float data[1];
-		data[0] = populationVector[i];
-		ImPlot::PlotPieChart(labels1, data, 1, populations * cos(pi2 * i / populations), populations * sin(pi2 * i / populations), 1, "%.2f", 90, flags);
-	}
-
+	
 	//Allow for modifications to the connectivity matrix
 	if (ImPlot::BeginLegendPopup("Population")) {
 		ImGui::BulletText("Connectivity Matrix");
@@ -128,6 +121,29 @@ void matrixCouplingFunc(float* mus, float* xs, float num) {
 		}
 
 		ImPlot::EndLegendPopup();
+	}
+
+	//Plot lines between connected nodes - done before populations so its underneath
+	float edge_coordinate1[2];
+	float edge_coordinate2[2];
+	for (int i = 0; i < populations; i++) {
+		for (int j = 0; j < populations; j++) {
+			if (connectivityMatrix[i][j] != 0) {
+				edge_coordinate1[0] = populations * cos(pi2 * i / populations);
+				edge_coordinate2[0] = populations * sin(pi2 * i / populations);
+				edge_coordinate1[1] = populations * cos(pi2 * j / populations);
+				edge_coordinate2[1] = populations * sin(pi2 * j / populations);
+				ImPlot::SetNextLineStyle(ImVec4(1, 1, 1, 0.5));
+				ImPlot::PlotLine("edges", edge_coordinate1, edge_coordinate2, 2);
+			}
+		}
+	}
+
+	//Plot the populations
+	for (int i = 0; i < populations; i++) {
+		static float data[1];
+		data[0] = populationVector[i];
+		ImPlot::PlotPieChart(labels1, data, 1, populations * cos(pi2 * i / populations), populations * sin(pi2 * i / populations), 1, "%.2f", 90, flags);
 	}
 
 	//Variables
