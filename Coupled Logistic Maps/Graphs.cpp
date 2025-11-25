@@ -9,6 +9,7 @@
 #include <random>
 #include <thread>
 #include <chrono>
+#include <math.h>
 
 using namespace std;
 
@@ -72,54 +73,73 @@ bool search(vector<float> a, float b) {
 	return false;
 }
 
-void logfunc(float* mus, float* xs, float number) {
-	ImPlot::PlotScatter("Data 1", mus, xs, (int)number);
+
+/* initialising variables */
+
+// mu
+float mu_min = -2;
+float mu_max = 4;
+int const mu_step = 1000;
+
+//starting value of x
+float x_0 = 0.5;
+
+//resolution
+int const no_of_steps = 1000;
+int const cutoff = 900;
+
+//number of total points
+int const number = (mu_step + 1) * (no_of_steps - cutoff - 1);
+
+
+void logfunc(float* xs, float* exps, float a) {
+
+	static float mus1[number], mus2[mu_step];
+	int mudummy1 = 0;
+	int mudummy2 = 0;
+	for (float mu = mu_min; mu <= mu_max; mu += ((mu_max - mu_min) / (float)mu_step)) {
+		mus2[mudummy2++] = mu;
+		for (int t = 0; t < no_of_steps; t++) 
+			if (t > cutoff) 
+				mus1[mudummy1++] = mu;
+	}
+
+	ImPlot::PlotScatter("Data 1", mus1, xs, number);
+	ImPlot::PlotLine("Data 2", mus2, exps, mu_step);
 	ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
 	ImPlot::PopStyleVar();
 }
 
 void logistic() {
 
-	/* initialising variables */
-
-	// mu
-	float mu_min = 0;
-	float mu_max = 4;
-	int const mu_step = 2000;
-
-	//starting value of x
-	float x_0 = 0.9;
-
-	//resolution
-	int const no_of_steps = 500;
-	int const cutoff = 200;
-
-	//number of total points
-	int const number = (mu_step + 1) * (no_of_steps - cutoff - 1);
-	static float mus[number], xs[number];
+	static float xs[number], exps[mu_step];
 
 	int mudummy = 0;
+	int expdummy = 0;
 	for (float mu = mu_min; mu <= mu_max; mu += ((mu_max - mu_min) / (float) mu_step)) {
 		// simulating the network
 		vector<float> blacklist = { 0 };
 		float x[no_of_steps + 1] = {};
 		x[0] = x_0;
+		float exp = 0.0f;
+		exp = 0.0f;
 		for (int t = 0; t < no_of_steps; t++)
 		{
 			//std::cout << "x[" << t << "] = " << x[t] << ", mu = " << mu << std::endl;
 			x[t + 1] = step(x[t], mu);
 
-			if (t > cutoff && !search(blacklist, x[t])) {
-				//std::cout << "Unique found" << std::endl;
-				mus[mudummy] = mu;
+			if (t > cutoff /* && !search(blacklist, x[t])*/) {
 				xs[mudummy] = x[t];
 				mudummy++;
 				blacklist.push_back(truncate(x[t]));
+				exp += log(abs(mu * (1.0f - (2.0f * x[t]))));
 			}
 		}
+		exps[expdummy++] = exp / (float)(no_of_steps - cutoff);
 	}
 
-	Graph(logfunc, mus, xs, number);
+	
+	Graph(logfunc, xs, exps, number);
 }
 
 

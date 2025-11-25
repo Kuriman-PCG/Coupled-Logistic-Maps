@@ -31,6 +31,7 @@ void matrixCouplingFunc(float* mus, float* xs, float num) {
 	static float alpha = 0.1;
 	static bool hasRun = false;
 	static bool logisticMap = false;
+	static bool lyapunov = false;
 
 	//Check whether the population size has changed
 	if (populationMemory != populations) {
@@ -120,6 +121,19 @@ void matrixCouplingFunc(float* mus, float* xs, float num) {
 			if (i < populations - 1) ImGui::SameLine();
 		}
 
+		ImGui::BulletText("Lyapunov");
+		for (int i = 0; i < populations; i++) {
+			char arr[7] = "Pop 00";
+			arr[4] = '0' + int(i / 10);
+			arr[5] = '0' + int(i % 10);
+
+			ImGui::SetNextItemWidth(50);
+			if (ImGui::Button(arr)) {
+				lyapunov = true;
+			}
+			if (i < populations - 1) ImGui::SameLine();
+		}
+
 		ImPlot::EndLegendPopup();
 	}
 
@@ -144,6 +158,12 @@ void matrixCouplingFunc(float* mus, float* xs, float num) {
 		static float data[1];
 		data[0] = populationVector[i];
 		ImPlot::PlotPieChart(labels1, data, 1, populations * cos(pi2 * i / populations), populations * sin(pi2 * i / populations), 1, "%.2f", 90, flags);
+	}
+
+	if (lyapunov) {
+		ImGui::BeginChild("Another WindowX", ImVec2(300, 200), true);
+		ImGui::Button("Hello from another window!");
+		ImGui::EndChild();
 	}
 
 	//Variables
