@@ -10,6 +10,14 @@
 #include <string>
 #include <sstream>
 #include <numeric>
+#include <mmstream.h>
+#include <Windows.h>
+
+float stepa(float x_n, float mu)
+{
+	float x_n1 = mu * x_n * (1 - x_n);
+	return(x_n1);
+}
 
 void matrixCouplingFunc(float* mus, float* xs, float num) {
 
@@ -31,7 +39,11 @@ void matrixCouplingFunc(float* mus, float* xs, float num) {
 	static float alpha = 0.1;
 	static bool hasRun = false;
 	static bool logisticMap = false;
+
 	static bool lyapunov = false;
+	static int lyapunovPop = 0;
+	static float lyapunovMu = 0.0f;
+	static float lyapunovFinished = true;
 
 	//Check whether the population size has changed
 	if (populationMemory != populations) {
@@ -48,7 +60,7 @@ void matrixCouplingFunc(float* mus, float* xs, float num) {
 	if (!hasRun) {
 		hasRun = true;
 		for (int i = 0; i < populations; i++) {
-			growthVector[i] = 1.5f;
+			growthVector[i] = !lyapunovFinished && i == lyapunovPop ? lyapunovMu : 1.5f;
 			capacityVector[i] = 1.0f;
 			populationVector[i] = 0.3f;
 		}
@@ -93,79 +105,137 @@ void matrixCouplingFunc(float* mus, float* xs, float num) {
 	const double pi2 = 6.2829;
 	static ImPlotPieChartFlags flags = 0;
 	
-	//Allow for modifications to the connectivity matrix
-	if (ImPlot::BeginLegendPopup("Population")) {
-		ImGui::BulletText("Connectivity Matrix");
-		for (int i = 0; i < populations; i++) {
-			for (int j = 0; j <= i; j++) {
-				//This looks jank but imgui forces me to use a different char[] label for every input
-				char arr[7] = "##0000";
-				arr[2] = '0' + int(i / 10);
-				arr[3] = '0' + int(i % 10);
-				arr[4] = '0' + int(j / 10);
-				arr[5] = '0' + int(j % 10);
 
-				ImGui::SetNextItemWidth(50);
-				ImGui::InputFloat(arr, &connectivityMatrix[i][j]);
-				if (j < i) ImGui::SameLine();
+
+	static float cratios[1] = { 1.0f };
+	static float rratios[2] = { 3.5f,1.0f };
+	static ImPlotSubplotFlags flagsa = ImPlotSubplotFlags_ShareItems;
+
+	if (ImPlot::BeginSubplots("My Subplots", 2, 1, ImVec2(-1, -120), flagsa, rratios, cratios)) {
+		int id = 0;
+		ImPlot::SetNextAxesLimits(-4, 4, -4, 4);
+		if (ImPlot::BeginPlot("a", ImVec2())) {
+			ImPlot::SetupAxes(nullptr, nullptr, 0, 0);
+
+			//Allow for modifications to the connectivity matrix
+			if (ImPlot::BeginLegendPopup("Population")) {
+				ImGui::BulletText("Connectivity Matrix");
+				for (int i = 0; i < populations; i++) {
+					for (int j = 0; j <= i; j++) {
+						//This looks jank but imgui forces me to use a different char[] label for every input
+						char arr[7] = "##0000";
+						arr[2] = '0' + int(i / 10);
+						arr[3] = '0' + int(i % 10);
+						arr[4] = '0' + int(j / 10);
+						arr[5] = '0' + int(j % 10);
+
+						ImGui::SetNextItemWidth(50);
+						ImGui::InputFloat(arr, &connectivityMatrix[i][j]);
+						if (j < i) ImGui::SameLine();
+					}
+				}
+				ImGui::BulletText("Growth Rates");
+				for (int i = 0; i < populations; i++) {
+					char arr[6] = "##a00";
+					arr[3] = '0' + int(i / 10);
+					arr[4] = '0' + int(i % 10);
+
+					ImGui::SetNextItemWidth(50);
+					ImGui::InputFloat(arr, &growthVector[i]);
+					if (i < populations - 1) ImGui::SameLine();
+				}
+
+				ImGui::BulletText("Lyapunov");
+				for (int i = 0; i < populations; i++) {
+					char arr[7] = "Pop 00";
+					arr[4] = '0' + int(i / 10);
+					arr[5] = '0' + int(i % 10);
+
+					ImGui::SetNextItemWidth(50);
+					if (ImGui::Button(arr)) {
+						lyapunov = true;
+						lyapunovFinished = false;
+						lyapunovPop = i;
+					}
+					if (i < populations - 1) ImGui::SameLine();
+				}
+
+				ImPlot::EndLegendPopup();
 			}
-		}
-		ImGui::BulletText("Growth Rates");
-		for (int i = 0; i < populations; i++) {
-			char arr[6] = "##a00";
-			arr[3] = '0' + int(i / 10);
-			arr[4] = '0' + int(i % 10);
 
-			ImGui::SetNextItemWidth(50);
-			ImGui::InputFloat(arr, &growthVector[i]);
-			if (i < populations - 1) ImGui::SameLine();
-		}
-
-		ImGui::BulletText("Lyapunov");
-		for (int i = 0; i < populations; i++) {
-			char arr[7] = "Pop 00";
-			arr[4] = '0' + int(i / 10);
-			arr[5] = '0' + int(i % 10);
-
-			ImGui::SetNextItemWidth(50);
-			if (ImGui::Button(arr)) {
-				lyapunov = true;
+			//Plot lines between connected nodes - done before populations so its underneath
+			float edge_coordinate1[2];
+			float edge_coordinate2[2];
+			for (int i = 0; i < populations; i++) {
+				for (int j = 0; j < populations; j++) {
+					if (connectivityMatrix[i][j] != 0) {
+						edge_coordinate1[0] = populations * cos(pi2 * i / populations);
+						edge_coordinate2[0] = populations * sin(pi2 * i / populations);
+						edge_coordinate1[1] = populations * cos(pi2 * j / populations);
+						edge_coordinate2[1] = populations * sin(pi2 * j / populations);
+						ImPlot::SetNextLineStyle(ImVec4(1, 1, 1, 0.5));
+						ImPlot::PlotLine("edges", edge_coordinate1, edge_coordinate2, 2);
+					}
+				}
 			}
-			if (i < populations - 1) ImGui::SameLine();
-		}
 
-		ImPlot::EndLegendPopup();
-	}
-
-	//Plot lines between connected nodes - done before populations so its underneath
-	float edge_coordinate1[2];
-	float edge_coordinate2[2];
-	for (int i = 0; i < populations; i++) {
-		for (int j = 0; j < populations; j++) {
-			if (connectivityMatrix[i][j] != 0) {
-				edge_coordinate1[0] = populations * cos(pi2 * i / populations);
-				edge_coordinate2[0] = populations * sin(pi2 * i / populations);
-				edge_coordinate1[1] = populations * cos(pi2 * j / populations);
-				edge_coordinate2[1] = populations * sin(pi2 * j / populations);
-				ImPlot::SetNextLineStyle(ImVec4(1, 1, 1, 0.5));
-				ImPlot::PlotLine("edges", edge_coordinate1, edge_coordinate2, 2);
+			//Plot the populations
+			for (int i = 0; i < populations; i++) {
+				static float data[1];
+				data[0] = populationVector[i];
+				ImPlot::PlotPieChart(labels1, data, 1, populations * cos(pi2 * i / populations), populations * sin(pi2 * i / populations), 1, "%.2f", 90, flags);
 			}
+
+			ImPlot::EndPlot();
 		}
-	}
 
-	//Plot the populations
-	for (int i = 0; i < populations; i++) {
-		static float data[1];
-		data[0] = populationVector[i];
-		ImPlot::PlotPieChart(labels1, data, 1, populations * cos(pi2 * i / populations), populations * sin(pi2 * i / populations), 1, "%.2f", 90, flags);
-	}
 
-	if (lyapunov) {
-		ImGui::BeginChild("Another WindowX", ImVec2(300, 200), true);
-		ImGui::Button("Hello from another window!");
-		ImGui::EndChild();
-	}
+		ImPlot::SetNextAxesLimits(0, 4, -5, 2);
+		if (ImPlot::BeginPlot("b", ImVec2(), ImPlotFlags_NoLegend)) {
+			ImPlot::SetupAxes(nullptr, nullptr, 0, 0);
+			const int steps = 120;
+			static int expCount = 0;
+			static float mu = 0.0f;
+			static float mu_step = 0.02f;
+			static float mu_max = 4.0f;
+			static float exps[steps] = {};
+			static float musa[steps] = {};
+			static float x[steps + 1] = {};
+			static float exp = 0.0f;
+			static int t = 0;
+			if (lyapunov) {
+				if (!lyapunovFinished) {
+					if(t <= steps){
+						//std::cout << "x[" << t << "] = " << x[t] << ", mu = " << mu << std::endl;
+						if (t > 1) {
+							x[t-2] = populationVector[lyapunovPop];
+							exp += log(abs(mu * (1.0f - (2.0f * x[t++ -2]))));
+						}
+						else {
+							t++;
+						}
+					}
+					else {
+						t = 0;
+						musa[expCount] = mu;
+						exps[expCount++] = exp / (float)(steps - 2);
+						exp = 0.0f;
+						mu += mu_step;
+						lyapunovMu = mu;
+						hasRun = false;
+						PlaySound(TEXT("H:/Y3FYP files/Project Code/Coupled Logistic Maps/Coupled Logistic Maps/mysound.wav"), NULL, SND_FILENAME | SND_ASYNC);
+					}
+					if (mu >= mu_max) lyapunovFinished = true;
+				}
 
+				ImPlot::PlotLine("lya", musa, exps, expCount);
+			}
+
+			ImPlot::EndPlot();
+		}
+
+		ImPlot::EndSubplots();
+	}
 	//Variables
 	ImGui::DragInt("Populations", &populations, 1.0F, 1, 20);
 	ImGui::DragFloat("Alpha", &alpha, 0.02F, 0.0f, 1.0f, "%.2f");
@@ -174,6 +244,6 @@ void matrixCouplingFunc(float* mus, float* xs, float num) {
 
 void matrixCoupling() {
 
-	float a[3], b[3], c = -2.0f;
+	float a[3], b[3], c = -3.0f;
 	Graph(matrixCouplingFunc, a, b, c);
 }

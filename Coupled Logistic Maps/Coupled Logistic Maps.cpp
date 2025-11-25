@@ -17,7 +17,7 @@ int main()
 	//coupling = 4
 	//stochastic = 5
 	//matrix coupling = 6
-	int mode = 1;
+	int mode = 6;
 
 	if (mode == 0) {
 		cobweb(0.5f);
