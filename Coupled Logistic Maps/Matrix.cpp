@@ -10,8 +10,6 @@
 #include <string>
 #include <sstream>
 #include <numeric>
-#include <mmstream.h>
-#include <Windows.h>
 
 float stepa(float x_n, float mu)
 {
@@ -38,6 +36,7 @@ void matrixCouplingFunc(float* mus, float* xs, float num) {
 	static int populationMemory = startPop;
 	static float alpha = 0.1;
 	static bool hasRun = false;
+	static bool hasStarted = false;
 	static bool logisticMap = false;
 
 	static bool lyapunov = false;
@@ -57,10 +56,14 @@ void matrixCouplingFunc(float* mus, float* xs, float num) {
 	}
 
 	//Set initial conditions
+	if (!hasStarted) {
+		for (int i = 0; i < populations; i++) growthVector[i] = 1.5f;
+		hasStarted = true;
+	}
 	if (!hasRun) {
 		hasRun = true;
 		for (int i = 0; i < populations; i++) {
-			growthVector[i] = !lyapunovFinished && i == lyapunovPop ? lyapunovMu : 1.5f;
+			growthVector[i] = !lyapunovFinished && i == lyapunovPop ? lyapunovMu : growthVector[i];
 			capacityVector[i] = 1.0f;
 			populationVector[i] = 0.3f;
 		}
@@ -193,10 +196,10 @@ void matrixCouplingFunc(float* mus, float* xs, float num) {
 		ImPlot::SetNextAxesLimits(0, 4, -5, 2);
 		if (ImPlot::BeginPlot("b", ImVec2(), ImPlotFlags_NoLegend)) {
 			ImPlot::SetupAxes(nullptr, nullptr, 0, 0);
-			const int steps = 120;
+			const int steps = 1200;
 			static int expCount = 0;
 			static float mu = 0.0f;
-			static float mu_step = 0.02f;
+			static float mu_step = 0.01f;
 			static float mu_max = 4.0f;
 			static float exps[steps] = {};
 			static float musa[steps] = {};
@@ -208,22 +211,20 @@ void matrixCouplingFunc(float* mus, float* xs, float num) {
 					if(t <= steps){
 						//std::cout << "x[" << t << "] = " << x[t] << ", mu = " << mu << std::endl;
 						if (t > 1) {
-							x[t-2] = populationVector[lyapunovPop];
-							exp += log(abs(mu * (1.0f - (2.0f * x[t++ -2]))));
+							exp += log(abs(mu * (1.0f - (2.0f * populationVector[lyapunovPop]))));
 						}
-						else {
-							t++;
-						}
+						t++;
 					}
 					else {
 						t = 0;
 						musa[expCount] = mu;
 						exps[expCount++] = exp / (float)(steps - 2);
+						std::cout << "mu: " << mu << ", exp: " << exps[expCount - 1] << std::endl;
 						exp = 0.0f;
 						mu += mu_step;
 						lyapunovMu = mu;
 						hasRun = false;
-						PlaySound(TEXT("H:/Y3FYP files/Project Code/Coupled Logistic Maps/Coupled Logistic Maps/mysound.wav"), NULL, SND_FILENAME | SND_ASYNC);
+						//PlaySound(TEXT("H:/Y3FYP files/Project Code/Coupled Logistic Maps/Coupled Logistic Maps/mysound.wav"), NULL, SND_FILENAME | SND_ASYNC);
 					}
 					if (mu >= mu_max) lyapunovFinished = true;
 				}

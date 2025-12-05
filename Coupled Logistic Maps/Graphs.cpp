@@ -23,6 +23,8 @@ float step(float x_n, float mu)
 void cobfunc(float* mus, float* xs, float num) {
 
 	float static mu = 3.5;
+	static bool animate = false;
+	static const int steps = 50;
 
 	static float xs1[1001], ys1[1001];
 	float div = 1001;
@@ -32,20 +34,29 @@ void cobfunc(float* mus, float* xs, float num) {
 	}
 
 	float static x0 = 0.155;
-	float static xs2[41], ys2[41];
+	float static xs2[steps * 2 + 1], ys2[steps * 2 + 1];
 	xs2[0] = x0;
 	ys2[0] = x0;
 
-	for (int i = 1; i < 21; i++) {
+	for (int i = 1; i < steps + 1; i++) {
 		xs2[2 * i - 1] = xs2[2 * i - 2];
 		ys2[2 * i - 1] = step(xs2[2 * i - 2], mu);
 		xs2[2 * i] = ys2[2 * i - 1];
 		ys2[2 * i] = ys2[2 * i - 1];
 	}
 
+	if (animate) {
+		mu += 0.0002f;
+		if (mu >= 4.0f) animate = false;
+	}
+
 	ImPlot::SetupAxes("x", "y");
 	ImGui::SliderFloat("Mu", &mu, 1, 5, "%.3f");
 	ImGui::SliderFloat("x0", &x0, 0, 1, "%.3f");
+	if (ImGui::Button("Animation")) {
+		mu = 1.0f;
+		animate = true;
+	}
 	ImPlot::PlotLine("f(x)", xs1, ys1, 1001);
 	ImPlot::PlotLine("g(x)", xs1, xs, 1001);
 	ImPlot::PlotLine("cobweb", xs2, ys2, 41);
@@ -74,19 +85,69 @@ bool search(vector<float> a, float b) {
 }
 
 
+void StyleSeaborn() {
+
+	ImPlotStyle& style = ImPlot::GetStyle();
+
+	ImVec4* colors = style.Colors;
+	colors[ImPlotCol_Line] = IMPLOT_AUTO_COL;
+	colors[ImPlotCol_Fill] = IMPLOT_AUTO_COL;
+	colors[ImPlotCol_MarkerOutline] = IMPLOT_AUTO_COL;
+	colors[ImPlotCol_MarkerFill] = IMPLOT_AUTO_COL;
+	colors[ImPlotCol_ErrorBar] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+	colors[ImPlotCol_FrameBg] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+	colors[ImPlotCol_PlotBg] = ImVec4(0.92f, 0.92f, 0.95f, 1.00f);
+	colors[ImPlotCol_PlotBorder] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+	colors[ImPlotCol_LegendBg] = ImVec4(0.92f, 0.92f, 0.95f, 1.00f);
+	colors[ImPlotCol_LegendBorder] = ImVec4(0.80f, 0.81f, 0.85f, 1.00f);
+	colors[ImPlotCol_LegendText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+	colors[ImPlotCol_TitleText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+	colors[ImPlotCol_InlayText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+	colors[ImPlotCol_AxisText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+	colors[ImPlotCol_AxisGrid] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+	colors[ImPlotCol_AxisBgHovered] = ImVec4(0.92f, 0.92f, 0.95f, 1.00f);
+	colors[ImPlotCol_AxisBgActive] = ImVec4(0.92f, 0.92f, 0.95f, 0.75f);
+	colors[ImPlotCol_Selection] = ImVec4(1.00f, 0.65f, 0.00f, 1.00f);
+	colors[ImPlotCol_Crosshairs] = ImVec4(0.23f, 0.10f, 0.64f, 0.50f);
+
+	style.LineWeight = 1.5;
+	style.Marker = ImPlotMarker_None;
+	style.MarkerSize = 4;
+	style.MarkerWeight = 1;
+	style.FillAlpha = 1.0f;
+	style.ErrorBarSize = 5;
+	style.ErrorBarWeight = 1.5f;
+	style.DigitalBitHeight = 8;
+	style.DigitalBitGap = 4;
+	style.PlotBorderSize = 0;
+	style.MinorAlpha = 1.0f;
+	style.MajorTickLen = ImVec2(0, 0);
+	style.MinorTickLen = ImVec2(0, 0);
+	style.MajorTickSize = ImVec2(0, 0);
+	style.MinorTickSize = ImVec2(0, 0);
+	style.MajorGridSize = ImVec2(1.2f, 1.2f);
+	style.MinorGridSize = ImVec2(1.2f, 1.2f);
+	style.PlotPadding = ImVec2(12, 12);
+	style.LabelPadding = ImVec2(5, 5);
+	style.LegendPadding = ImVec2(5, 5);
+	style.MousePosPadding = ImVec2(5, 5);
+	style.PlotMinSize = ImVec2(300, 225);
+}
+
+
 /* initialising variables */
 
 // mu
-float mu_min = -2;
+float mu_min = 1;
 float mu_max = 4;
-int const mu_step = 1000;
+int const mu_step = 5000;
 
 //starting value of x
 float x_0 = 0.5;
 
 //resolution
-int const no_of_steps = 1000;
-int const cutoff = 900;
+int const no_of_steps = 5000;
+int const cutoff = 4500;
 
 //number of total points
 int const number = (mu_step + 1) * (no_of_steps - cutoff - 1);
@@ -103,12 +164,21 @@ void logfunc(float* xs, float* exps, float a) {
 			if (t > cutoff) 
 				mus1[mudummy1++] = mu;
 	}
-
-	ImPlot::PlotScatter("Data 1", mus1, xs, number);
-	ImPlot::PlotLine("Data 2", mus2, exps, mu_step);
-	ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
+	StyleSeaborn();
+	ImPlot::SetupAxes("Growth Rate, r", "Population, x");
+	ImPlot::PushStyleColor(ImPlotCol_MarkerFill, ImVec4(0.0f, 0.0f, 0.0f, 0.8f));
+	ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(0.0f, 0.0f, 0.0f, 0.8f));
+	ImPlot::PushStyleVar(ImPlotStyleVar_MarkerSize, 0.5f);
+	ImPlot::PlotScatter("##Data1", mus1, xs, number);
+	static float ab[1] =  { 4.001f };
+	static float b[1] = { 1.001f };
+	ImPlot::PlotScatter("##Data1", ab, b, 1);
+	//ImPlot::PlotLine("Data 2", mus2, exps, mu_step);
 	ImPlot::PopStyleVar();
+	ImPlot::PopStyleColor(2);
 }
+
+
 
 void logistic() {
 
@@ -306,4 +376,104 @@ void stochasticlogistic() {
 	const int no_of_steps = -2.0f;
 	float X[3], t[3];
 	Graph(stologfunc, X, t, no_of_steps);
+}
+
+
+void cobpopfunc(float* mus, float* xs, float num) {
+
+	float static mu = 1.5;
+	static bool animate = false;
+	static const int steps = 30;
+
+	static float xs1[1001], ys1[1001];
+	float div = 1001;
+	for (int i = 0; i < 1001; ++i) {
+		xs1[i] = i * 0.001f;
+		ys1[i] = step(xs1[i], (float)mu);
+	}
+
+	float static x0 = 0.2;
+	float static xs2[steps * 2 + 1], ys2[steps * 2 + 1], t[steps + 1], ys3[steps + 1];
+	xs2[0] = x0;
+	ys2[0] = x0;
+	ys3[0] = x0;
+	t[0] = 0;
+
+	for (int i = 1; i < steps + 1; i++) {
+		xs2[2 * i - 1] = xs2[2 * i - 2];
+		ys2[2 * i - 1] = step(xs2[2 * i - 2], mu);
+		xs2[2 * i] = ys2[2 * i - 1];
+		ys2[2 * i] = ys2[2 * i - 1];
+		t[i] = i;
+		ys3[i] = ys2[2 * i];
+	}
+
+	if (animate) {
+		x0 += 0.0000005f;
+		if (x0 >= 0.2005f) animate = false;
+	}
+
+
+
+	static float cratios[2] = { 1.0f, 1.0f };
+	static float rratios[1] = { 1.0f };
+	static ImPlotSubplotFlags flagsa = ImPlotSubplotFlags_ShareItems;
+	if (ImPlot::BeginSubplots("##My Subplots", 1, 2, ImVec2(-1, -120), 0, rratios, cratios)) {
+		int id = 0;
+		StyleSeaborn();
+		ImPlot::SetNextAxesLimits(0, 1, 0, 1);
+		if (ImPlot::BeginPlot("Cobweb", ImVec2())) {
+			ImPlot::SetupAxes(nullptr, nullptr, 0, 0);
+
+			char currentValue[12] = "x0 = 0.2000";
+			currentValue[5] = '0' + int(x0);
+			currentValue[7] = '0' + int(x0 * 10) % 10;
+			currentValue[8] = '0' + int(x0 * 100) % 10;
+			currentValue[9] = '0' + int(x0 * 1000) % 10;
+			currentValue[10] = '0' + int(x0 * 10000) % 10;
+
+			ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+			ImPlot::PlotLine(currentValue, xs1, ys1, 1001);
+			ImPlot::PopStyleColor();
+			ImPlot::PlotLine("##g(x)", xs1, xs, 1001);
+			ImPlot::PlotLine("##cobweb", xs2, ys2, 41);
+
+			ImPlot::EndPlot();
+		}
+
+
+		ImPlot::SetNextAxesLimits(0, 30, 0, 1);
+		if (ImPlot::BeginPlot("Population", ImVec2(), ImPlotFlags_NoLegend)) {
+			ImPlot::SetupAxes(nullptr, nullptr, 0, 0);
+
+			ImPlot::PushStyleColor(ImPlotCol_MarkerFill, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+			ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+			ImPlot::PlotScatter("##Population", t, ys3, 31);
+			ImPlot::PopStyleColor(2);
+			ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+			ImPlot::PlotLine("##Population2", t, ys3, 31);
+			ImPlot::PopStyleColor();
+
+			ImPlot::EndPlot();
+		}
+
+		ImPlot::EndSubplots();
+	}
+
+	ImGui::SliderFloat("r", &mu, 1, 4, "%.3f");
+	ImGui::SliderFloat("x0", &x0, 0, 1, "%.3f");
+	if (ImGui::Button("Animation")) {
+		x0 = 0.2f;
+		animate = true;
+	}
+}
+
+void cobpopweb(float mu)
+{
+	static float xs2[1001], ys2[1001];
+	for (int i = 0; i < 1001; ++i) {
+		ys2[i] = (float)i / 1001;
+	}
+
+	Graph(cobpopfunc, xs2, ys2, -3.0f);
 }

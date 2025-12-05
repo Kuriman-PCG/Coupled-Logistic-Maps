@@ -209,7 +209,7 @@ int Graph(void (*func)(float*, float*, float), float* mus, float* xs, float numb
         }
         else if (number == -3.0f){}
         else {
-            ImPlot::BeginPlot("Line Plots", ImVec2(-1, -1));
+            ImPlot::BeginPlot("Logistic Map", ImVec2(-1, -100));
         }
 
         //Function goes here:---------------------------------------------------------------------------------------------------------------------------------------------------------

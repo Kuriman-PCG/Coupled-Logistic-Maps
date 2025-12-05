@@ -17,7 +17,8 @@ int main()
 	//coupling = 4
 	//stochastic = 5
 	//matrix coupling = 6
-	int mode = 6;
+	//cobweb + population = 7
+	int mode = 7;
 
 	if (mode == 0) {
 		cobweb(0.5f);
@@ -39,5 +40,8 @@ int main()
 	}
 	if (mode == 6) {
 		matrixCoupling();
+	}
+	if (mode == 7) {
+		cobpopweb(3.5f);
 	}
 }
