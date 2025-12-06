@@ -6,3 +6,4 @@ void population();
 void stochasticlogistic();
 void cobpopweb(float);
 void StyleSeaborn();
+void cobpoplog();

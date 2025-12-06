@@ -137,17 +137,18 @@ void StyleSeaborn() {
 
 /* initialising variables */
 
+
 // mu
 float mu_min = 1;
 float mu_max = 4;
-int const mu_step = 5000;
+int const mu_step = 1000;
 
 //starting value of x
 float x_0 = 0.5;
 
 //resolution
-int const no_of_steps = 5000;
-int const cutoff = 4500;
+int const no_of_steps = 2500;
+int const cutoff = 2000;
 
 //number of total points
 int const number = (mu_step + 1) * (no_of_steps - cutoff - 1);
@@ -165,17 +166,33 @@ void logfunc(float* xs, float* exps, float a) {
 				mus1[mudummy1++] = mu;
 	}
 	StyleSeaborn();
-	ImPlot::SetupAxes("Growth Rate, r", "Population, x");
-	ImPlot::PushStyleColor(ImPlotCol_MarkerFill, ImVec4(0.0f, 0.0f, 0.0f, 0.8f));
-	ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(0.0f, 0.0f, 0.0f, 0.8f));
-	ImPlot::PushStyleVar(ImPlotStyleVar_MarkerSize, 0.5f);
-	ImPlot::PlotScatter("##Data1", mus1, xs, number);
-	static float ab[1] =  { 4.001f };
-	static float b[1] = { 1.001f };
-	ImPlot::PlotScatter("##Data1", ab, b, 1);
-	//ImPlot::PlotLine("Data 2", mus2, exps, mu_step);
-	ImPlot::PopStyleVar();
-	ImPlot::PopStyleColor(2);
+	if (ImPlot::BeginSubplots("##a", 2, 1, ImVec2(-1, -1), ImPlotSubplotFlags_NoLegend)) {
+		ImPlot::SetNextAxesLimits(2, 4, 0, 1);
+		if (ImPlot::BeginPlot("Bifurcation Diagram")) {
+			ImPlot::SetupAxes(nullptr, "Population, x");
+			ImPlot::PushStyleColor(ImPlotCol_MarkerFill, ImVec4(0.0f, 0.0f, 0.0f, 0.8f));
+			ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(0.0f, 0.0f, 0.0f, 0.8f));
+			ImPlot::PushStyleVar(ImPlotStyleVar_MarkerSize, 0.5f);
+			ImPlot::PlotScatter("##Data1", mus1, xs, number);
+			ImPlot::PopStyleVar();
+			ImPlot::PopStyleColor(2);
+			ImPlot::EndPlot();
+		}
+		ImPlot::SetNextAxesLimits(2, 4, -2, 1);
+		if (ImPlot::BeginPlot("Lyapunov exponent")) {
+			static double drag_tag = 0.0f;
+			ImPlot::SetupAxes("Growth Rate, r", "Lyapunov exponent, lambda");
+			ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.5f, 0.5f, 0.5f, 0.8f));
+			ImPlot::DragLineY(0, &drag_tag, ImVec4(1, 0, 0, 1), 1, ImPlotDragToolFlags_NoFit);
+			ImPlot::PopStyleColor();
+			ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.0f, 0.0f, 0.0f, 0.8f));
+			ImPlot::PushStyleVar(ImPlotStyleVar_MarkerSize, 0.5f);
+			ImPlot::PlotLine("##Data 2", mus2, exps, mu_step);
+			ImPlot::PopStyleColor();
+			ImPlot::EndPlot();
+		}
+		ImPlot::EndSubplots();
+	}
 }
 
 
@@ -209,7 +226,7 @@ void logistic() {
 	}
 
 	
-	Graph(logfunc, xs, exps, number);
+	Graph(logfunc, xs, exps, -3);
 }
 
 
@@ -409,8 +426,8 @@ void cobpopfunc(float* mus, float* xs, float num) {
 	}
 
 	if (animate) {
-		x0 += 0.0000005f;
-		if (x0 >= 0.2005f) animate = false;
+		mu += 0.01f;
+		if (mu >= 4.0f) animate = false;
 	}
 
 
@@ -425,12 +442,10 @@ void cobpopfunc(float* mus, float* xs, float num) {
 		if (ImPlot::BeginPlot("Cobweb", ImVec2())) {
 			ImPlot::SetupAxes(nullptr, nullptr, 0, 0);
 
-			char currentValue[12] = "x0 = 0.2000";
-			currentValue[5] = '0' + int(x0);
-			currentValue[7] = '0' + int(x0 * 10) % 10;
-			currentValue[8] = '0' + int(x0 * 100) % 10;
-			currentValue[9] = '0' + int(x0 * 1000) % 10;
-			currentValue[10] = '0' + int(x0 * 10000) % 10;
+			char currentValue[9] = "r = 1.00";
+			currentValue[4] = '0' + int(mu);
+			currentValue[6] = '0' + int(mu * 10) % 10;
+			currentValue[7] = '0' + int(mu * 100) % 10;
 
 			ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
 			ImPlot::PlotLine(currentValue, xs1, ys1, 1001);
@@ -463,7 +478,7 @@ void cobpopfunc(float* mus, float* xs, float num) {
 	ImGui::SliderFloat("r", &mu, 1, 4, "%.3f");
 	ImGui::SliderFloat("x0", &x0, 0, 1, "%.3f");
 	if (ImGui::Button("Animation")) {
-		x0 = 0.2f;
+		mu = 1.0f;
 		animate = true;
 	}
 }
@@ -476,4 +491,175 @@ void cobpopweb(float mu)
 	}
 
 	Graph(cobpopfunc, xs2, ys2, -3.0f);
+}
+
+//-----------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------------------
+
+
+/*
+// mu
+float mu_min = 1;
+float mu_max = 4;
+int const mu_step = 5000;
+
+//starting value of x
+float x_0 = 0.5;
+
+//resolution
+int const no_of_steps = 5000;
+int const cutoff = 4500;
+
+//number of total points
+int const number = (mu_step + 1) * (no_of_steps - cutoff - 1);
+*/
+
+
+void cobpopwebfunc(float* mus, float* xs, float num) {
+
+	const int numm = 501;
+
+	static float ys[numm];
+	for (int i = 0; i < numm; ++i) {
+		ys[i] = (float)i / numm;
+	}
+
+	float static mu = 1.0f;
+	static bool animate = false;
+	static const int steps = 30;
+
+	static float xs1[numm], ys1[numm];
+	float div = numm;
+	for (int i = 0; i < numm; ++i) {
+		xs1[i] = i * (1.0f / ((float)numm - 1.0f));
+		ys1[i] = step(xs1[i], (float)mu);
+	}
+
+	float static x0 = 0.2;
+	float static xs2[steps * 2 + 1], ys2[steps * 2 + 1], t[steps + 1], ys3[steps + 1];
+	xs2[0] = x0;
+	ys2[0] = x0;
+	ys3[0] = x0;
+	t[0] = 0;
+
+	for (int i = 1; i < steps + 1; i++) {
+		xs2[2 * i - 1] = xs2[2 * i - 2];
+		ys2[2 * i - 1] = step(xs2[2 * i - 2], mu);
+		xs2[2 * i] = ys2[2 * i - 1];
+		ys2[2 * i] = ys2[2 * i - 1];
+		t[i] = i;
+		ys3[i] = ys2[2 * i];
+	}
+
+
+	
+	if (animate) {
+		mu += 2 * mu * mu * (mu_max - mu_min) / mu_step;
+		if (mu >= 4.0f) {
+			mu = 4.0f;
+			animate = false;
+		}
+	}
+
+
+
+	static float cratios[2] = { 1.0f, 1.0f };
+	static float rratios[1] = { 1.0f };
+	static ImPlotSubplotFlags flagsa = ImPlotSubplotFlags_ShareItems;
+	if (ImPlot::BeginSubplots("##My Subplots", 1, 2, ImVec2(-1, 400), 0, rratios, cratios)) {
+		int id = 0;
+		StyleSeaborn();
+		ImPlot::SetNextAxesLimits(0, 1, 0, 1);
+		if (ImPlot::BeginPlot("Cobweb", ImVec2())) {
+			ImPlot::SetupAxes(nullptr, nullptr, 0, 0);
+
+			char currentValue[9] = "r = 1.00";
+			currentValue[4] = '0' + int(mu);
+			currentValue[6] = '0' + int(mu * 10) % 10;
+			currentValue[7] = '0' + int(mu * 100) % 10;
+
+			ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+			ImPlot::PlotLine(currentValue, xs1, ys1, numm);
+			ImPlot::PopStyleColor();
+			ImPlot::PlotLine("##g(x)", xs1, ys, numm);
+			ImPlot::PlotLine("##cobweb", xs2, ys2, 41);
+
+			ImPlot::EndPlot();
+		}
+
+
+		ImPlot::SetNextAxesLimits(0, 30, 0, 1);
+		if (ImPlot::BeginPlot("Population", ImVec2(), ImPlotFlags_NoLegend)) {
+			ImPlot::SetupAxes(nullptr, nullptr, 0, 0);
+
+			ImPlot::PushStyleColor(ImPlotCol_MarkerFill, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+			ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+			ImPlot::PlotScatter("##Population", t, ys3, 31);
+			ImPlot::PopStyleColor(2);
+			ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+			ImPlot::PlotLine("##Population2", t, ys3, 31);
+			ImPlot::PopStyleColor();
+
+			ImPlot::EndPlot();
+		}
+
+		ImPlot::EndSubplots();
+	}
+
+
+	ImPlot::SetNextAxesLimits(0, 4, 0, 1);
+	if (ImPlot::BeginPlot("Bifurcation Diagram", ImVec2(-1, 400), ImPlotFlags_NoLegend)) {
+		StyleSeaborn();
+		ImPlot::SetupAxes("Growth Rate, r", "Population, x", 0, 0);
+		ImPlot::PushStyleColor(ImPlotCol_MarkerFill, ImVec4(0.0f, 0.0f, 0.0f, 0.8f));
+		ImPlot::PushStyleColor(ImPlotCol_MarkerOutline, ImVec4(0.0f, 0.0f, 0.0f, 0.8f));
+		ImPlot::PushStyleVar(ImPlotStyleVar_MarkerSize, 0.5f);
+		ImPlot::PlotScatter("##Data", mus, xs, ((mu - mu_min) / (mu_max - mu_min)) * (mu_step + 1) * (no_of_steps-cutoff - 1));
+		ImPlot::PopStyleVar();
+		ImPlot::PopStyleColor(2);
+		ImPlot::EndPlot();
+	}
+
+	ImGui::SliderFloat("r", &mu, 1, 4, "%.3f");
+	ImGui::SliderFloat("x0", &x0, 0, 1, "%.3f");
+	if (ImGui::Button("Animation")) {
+		mu = 1.0f;
+		animate = true;
+	}
+}
+
+void cobpoplog()
+{
+	static float xs[number];
+	static float mus[number];
+	int mudummy1 = 0;
+	int mudummy2 = 0;
+	for (float mu = mu_min; mu <= mu_max; mu += ((mu_max - mu_min) / (float)mu_step)) {
+		for (int t = 0; t < no_of_steps; t++)
+			if (t > cutoff)
+				mus[mudummy1++] = mu;
+	}
+
+	int mudummy = 0;
+	for (float mu = mu_min; mu <= mu_max; mu += ((mu_max - mu_min) / (float)mu_step)) {
+		// simulating the network
+		vector<float> blacklist = { 0 };
+		float x[no_of_steps + 1] = {};
+		x[0] = x_0;
+		for (int t = 0; t < no_of_steps; t++)
+		{
+			//std::cout << "x[" << t << "] = " << x[t] << ", mu = " << mu << std::endl;
+			x[t + 1] = step(x[t], mu);
+
+			if (t > cutoff /* && !search(blacklist, x[t])*/) {
+				xs[mudummy] = x[t];
+				mudummy++;
+				//blacklist.push_back(truncate(x[t]));
+			}
+		}
+	}
+
+	Graph(cobpopwebfunc, mus, xs, -3.0f);
 }
