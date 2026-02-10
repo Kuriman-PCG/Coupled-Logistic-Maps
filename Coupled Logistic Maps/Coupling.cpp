@@ -281,3 +281,94 @@ void sepcouple() {
 
 	Graph(sepcoupfunc, mus, xs, num);
 }
+
+float timestep(float x, float r) {
+	return r * x * (1 - x);
+}
+
+float* timestep2(float x_n, float y_n, float a, float b, float c) {
+	float x_n1 = (1 - c) * timestep(x_n, a) + c * timestep(y_n, b);
+	float y_n1 = c * timestep(x_n, a) + (1 - c) * timestep(y_n, b);
+	float xy[2] = { x_n1, y_n1 };
+	return xy;
+}
+
+
+void timecoupfunc(float* mus, float* xs, float number) {
+
+
+	static ScrollingBuffer sdata1, sdata2, sdata3, sdata4;
+	static float t = 0;
+	static float history = 10.0f;
+	static float a = 1.8f;
+	static float b = 1.8f;
+	static float c = 0.1f;
+	static float d = 0.1f;
+	static float xy[2] = { 0.5f, 0.5f };
+	static float xy2[2] = { 0.5f, 0.5f };
+	static int timer = 50;
+
+	t++;
+	this_thread::sleep_for(std::chrono::milliseconds(timer));
+
+	float* output = step2(xy[0], xy[1], a, b, c, c);
+	xy[0] = output[0];
+	xy[1] = output[1];
+	float* output2 = timestep2(xy2[0], xy2[1], a, b, c);
+	xy2[0] = output2[0];
+	xy2[1] = output2[1];
+
+	sdata1.AddPoint(t, xy[0]);
+	sdata2.AddPoint(t, xy[1]);
+	sdata3.AddPoint(t, xy2[0]);
+	sdata4.AddPoint(t, xy2[1]);
+
+
+	static float cratios[1] = { 1.0f };
+	static float rratios[2] = { 1.0f ,1.0f };
+	static ImPlotSubplotFlags flagsa = ImPlotSubplotFlags_ShareItems;
+
+	if (ImPlot::BeginSubplots("My Subplots", 2, 1, ImVec2(-1, -120), flagsa, rratios, cratios)) {
+		if (ImPlot::BeginPlot("Pop 1", ImVec2())) {
+			ImPlot::SetupAxes("t", "x");
+			ImPlot::SetupAxisLimits(ImAxis_X1, t - history, t, ImGuiCond_Always);
+			ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1);
+			ImPlot::PlotLine("Populati1", &sdata1.Data[0].x, &sdata1.Data[0].y, sdata1.Data.size(), 0, sdata1.Offset, 2 * sizeof(float));
+			ImPlot::PlotLine("Populati2", &sdata2.Data[0].x, &sdata2.Data[0].y, sdata2.Data.size(), 0, sdata2.Offset, 2 * sizeof(float));
+
+			ImPlot::EndPlot();
+		}
+		if (ImPlot::BeginPlot("Pop 2", ImVec2())) {
+
+			ImPlot::SetupAxes("t", "y");
+			ImPlot::SetupAxisLimits(ImAxis_X1, t - history, t, ImGuiCond_Always);
+			ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1);
+			ImPlot::PlotLine("Populati1a", &sdata3.Data[0].x, &sdata3.Data[0].y, sdata3.Data.size(), 0, sdata3.Offset, 2 * sizeof(float));
+			ImPlot::PlotLine("Populati2a", &sdata4.Data[0].x, &sdata4.Data[0].y, sdata4.Data.size(), 0, sdata4.Offset, 2 * sizeof(float));
+
+			ImPlot::EndPlot();
+		}
+		ImPlot::EndSubplots();
+	}
+
+
+	ImGui::SliderFloat("a", &a, 0, 4, "%.2f");
+	ImGui::SliderFloat("b", &b, 0, 4, "%.2f");
+	ImGui::SliderFloat("c", &c, 0, 1, "%.2f");
+	ImGui::SliderInt("Timer", &timer, 0, 1000);
+	ImGui::SliderFloat("History", &history, 1, 30, "%.1f s");
+	if (ImGui::Button("Revive From Death")) {
+		xy[0] = 0.5f;
+		xy[1] = 0.5f;
+		xy2[0] = 0.5f;
+		xy2[1] = 0.5f;
+	}
+
+}
+
+void timecouple() {
+	float mus[3], xs[3];
+	float num = -3.0f;
+
+	Graph(timecoupfunc, mus, xs, num);
+}

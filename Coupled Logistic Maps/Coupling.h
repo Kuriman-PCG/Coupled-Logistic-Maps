@@ -2,3 +2,4 @@
 void couple();
 void coupledcobweb();
 void sepcouple();
+void timecouple();

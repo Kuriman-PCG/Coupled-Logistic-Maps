@@ -17,7 +17,10 @@ int main()
 	//coupling = 4
 	//stochastic = 5
 	//matrix coupling = 6
-	int mode = 8;
+	//coupled cobweb = 7
+	//separated step coupled = 8
+	//time step coupled = 9
+	int mode = 9;
 
 	if (mode == 0) {
 		cobweb(0.5f);
@@ -45,6 +48,9 @@ int main()
 	}
 	if (mode == 8) {
 		sepcouple();
+	}
+	if (mode == 9) {
+		timecouple();
 	}
 }
 
