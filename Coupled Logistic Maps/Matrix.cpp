@@ -223,7 +223,7 @@ void matrixCouplingFunc(float* mus, float* xs, float num) {
 						mu += mu_step;
 						lyapunovMu = mu;
 						hasRun = false;
-						PlaySound(TEXT("H:/Y3FYP files/Project Code/Coupled Logistic Maps/Coupled Logistic Maps/mysound.wav"), NULL, SND_FILENAME | SND_ASYNC);
+						//PlaySound(TEXT("H:/Y3FYP files/Project Code/Coupled Logistic Maps/Coupled Logistic Maps/mysound.wav"), NULL, SND_FILENAME | SND_ASYNC);
 					}
 					if (mu >= mu_max) lyapunovFinished = true;
 				}

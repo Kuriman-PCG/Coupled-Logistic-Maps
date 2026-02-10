@@ -1,2 +1,4 @@
 #pragma once
 void couple();
+void coupledcobweb();
+void sepcouple();

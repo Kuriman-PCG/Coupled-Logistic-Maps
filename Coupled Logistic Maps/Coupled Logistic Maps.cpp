@@ -17,7 +17,7 @@ int main()
 	//coupling = 4
 	//stochastic = 5
 	//matrix coupling = 6
-	int mode = 6;
+	int mode = 8;
 
 	if (mode == 0) {
 		cobweb(0.5f);
@@ -40,4 +40,15 @@ int main()
 	if (mode == 6) {
 		matrixCoupling();
 	}
+	if (mode == 7) {
+		coupledcobweb();
+	}
+	if (mode == 8) {
+		sepcouple();
+	}
 }
+
+// Critical point changes when coupling
+// Cobweb diagram changes
+// Coupled cobweb diagrams
+// Separating the coupled logistic map population graph into its logistic term step and coupling term step
