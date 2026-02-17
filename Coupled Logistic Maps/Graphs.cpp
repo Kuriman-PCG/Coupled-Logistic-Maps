@@ -307,3 +307,36 @@ void stochasticlogistic() {
 	float X[3], t[3];
 	Graph(stologfunc, X, t, no_of_steps);
 }
+
+void gausspopfunc(float* mus, float* xs, float number) {
+	static ScrollingBuffer sdata1, sdata2;
+	static float t = 0;
+	static float history = 10.0f;
+	static float mu = 1.8f;
+	static float x = 0.6;
+
+	static float mean = 0.15;
+	static float stddev = 0.15;
+	std::default_random_engine generator;
+	std::normal_distribution<float> dist(mean, stddev);
+
+	t += ImGui::GetIO().DeltaTime;
+	x = step(x, mu) + dist(generator);
+	sdata2.AddPoint(t, x);
+
+	ImGui::SliderFloat("Mu", &mu, 1, 4, "%.1f");
+	ImGui::SliderFloat("History", &history, 1, 30, "%.1f s");
+
+
+	ImPlot::SetupAxes(nullptr, nullptr, 0, 0);
+	ImPlot::SetupAxisLimits(ImAxis_X1, t - history, t, ImGuiCond_Always);
+	ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1);
+	ImPlot::PlotLine("Population", &sdata2.Data[0].x, &sdata2.Data[0].y, sdata2.Data.size(), 0, sdata2.Offset, 2 * sizeof(float));
+}
+
+void gausspopulation() {
+	float mus[3], xs[3];
+	float num = -1.0f;
+
+	Graph(gausspopfunc, mus, xs, num);
+}

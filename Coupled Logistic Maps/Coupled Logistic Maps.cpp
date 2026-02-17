@@ -52,6 +52,9 @@ int main()
 	if (mode == 9) {
 		timecouple();
 	}
+	if (mode == 10) {
+		gausspopulation();
+	}
 }
 
 // Critical point changes when coupling
