@@ -303,18 +303,19 @@ void timecoupfunc(float* mus, float* xs, float number) {
 	static float a = 1.8f;
 	static float b = 1.8f;
 	static float c = 0.1f;
-	static float d = 0.1f;
+	static float e = 1.8f;
 	static float xy[2] = { 0.5f, 0.5f };
 	static float xy2[2] = { 0.5f, 0.5f };
+	static bool sep = false;
 	static int timer = 50;
 
 	t++;
 	this_thread::sleep_for(std::chrono::milliseconds(timer));
 
-	float* output = step2(xy[0], xy[1], a, b, c, c);
+	float* output = step2(xy[0], xy[1], sep ? a : e, sep ? b : e, c, c);
 	xy[0] = output[0];
 	xy[1] = output[1];
-	float* output2 = timestep2(xy2[0], xy2[1], a, b, c);
+	float* output2 = timestep2(xy2[0], xy2[1], sep ? a : e, sep ? b : e, c);
 	xy2[0] = output2[0];
 	xy2[1] = output2[1];
 
@@ -351,9 +352,13 @@ void timecoupfunc(float* mus, float* xs, float number) {
 		ImPlot::EndSubplots();
 	}
 
-
-	ImGui::SliderFloat("a", &a, 0, 4, "%.2f");
-	ImGui::SliderFloat("b", &b, 0, 4, "%.2f");
+	if (sep) {
+		ImGui::SliderFloat("a", &a, 0, 4, "%.2f");
+		ImGui::SliderFloat("b", &b, 0, 4, "%.2f");
+	}
+	else {
+		ImGui::SliderFloat("e", &e, 0, 4, "%.2f");
+	}
 	ImGui::SliderFloat("c", &c, 0, 1, "%.2f");
 	ImGui::SliderInt("Timer", &timer, 0, 1000);
 	ImGui::SliderFloat("History", &history, 1, 30, "%.1f s");
@@ -363,7 +368,7 @@ void timecoupfunc(float* mus, float* xs, float number) {
 		xy2[0] = 0.5f;
 		xy2[1] = 0.5f;
 	}
-
+	ImGui::SameLine(); ImGui::Checkbox("Separated", &sep);
 }
 
 void timecouple() {
