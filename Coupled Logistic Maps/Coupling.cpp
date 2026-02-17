@@ -6,6 +6,7 @@
 #include <vector>
 #include <chrono>
 #include <thread>
+#include <random>
 
 using namespace std;
 
@@ -368,6 +369,18 @@ void timecoupfunc(float* mus, float* xs, float number) {
 		xy2[0] = 0.5f;
 		xy2[1] = 0.5f;
 	}
+	if (ImGui::Button("Nudge")) {
+		std::random_device dev;
+		std::mt19937 gen(dev());
+		std::uniform_real_distribution<float> dist6(-0.1, 0.1);
+
+		float ab = dist6(gen);
+
+		xy[0] += dist6(gen);
+		xy[1] += dist6(gen);
+		xy2[0] += dist6(gen);
+		xy2[1] += dist6(gen);
+	}
 	ImGui::SameLine(); ImGui::Checkbox("Separated", &sep);
 }
 
@@ -376,4 +389,8 @@ void timecouple() {
 	float num = -3.0f;
 
 	Graph(timecoupfunc, mus, xs, num);
+}
+
+int main()
+{
 }
