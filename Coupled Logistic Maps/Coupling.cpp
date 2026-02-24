@@ -391,6 +391,113 @@ void timecouple() {
 	Graph(timecoupfunc, mus, xs, num);
 }
 
-int main()
-{
+
+float atruncate(float x) {
+	return (trunc(x * 100000) / 100000);
+}
+
+bool asearch(vector<float> a, float b) {
+	for (int i = 0; i < a.size(); i++)
+		if (atruncate(a[i]) == atruncate(b))
+			return true;
+	return false;
+}
+
+/* initialising variables */
+
+// mu
+float amu_min = 1;
+float amu_max = 4;
+int const amu_step = 1000;
+
+//starting values
+float ax_0 = 0.51;
+float ay_0 = 0.5;
+float alpha = 0.1;
+
+//resolution
+int const ano_of_steps = 2000;
+int const acutoff = 1800;
+
+//number of total points
+int const anumber = (amu_step + 1) * (ano_of_steps - acutoff - 1);
+
+
+void coupledlogfunc(float* xs, float* ys, float a) {
+
+	static float mus1[anumber];
+	int mudummy1 = 0;
+	for (float mu = amu_min; mu <= amu_max; mu += ((amu_max - amu_min) / (float)amu_step)) {
+		for (int t = 0; t < ano_of_steps; t++)
+			if (t > acutoff)
+				mus1[mudummy1++] = mu;
+	}
+
+
+	static float cratios[1] = { 1.0f };
+	static float rratios[2] = { 1.0f ,1.0f };
+	static ImPlotSubplotFlags flagsa = ImPlotSubplotFlags_ShareItems;
+
+	if(ImPlot::BeginSubplots("My Subplots", 2, 1, ImVec2(-1, -1), flagsa, rratios, cratios)) {
+		if (ImPlot::BeginPlot("Pop 1", ImVec2())) {
+			ImPlot::SetupAxes("x", "r");
+			ImPlot::PlotScatter("Data 1", mus1, xs, anumber);
+			ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
+			ImPlot::PopStyleVar();
+			ImPlot::EndPlot();
+		}
+		if (ImPlot::BeginPlot("Pop 2", ImVec2())) {
+
+			ImPlot::SetupAxes("y", "r");
+			ImPlot::PlotScatter("Data 2", mus1, ys, anumber);
+			ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
+			ImPlot::PopStyleVar();
+			ImPlot::EndPlot();
+		}
+		ImPlot::EndSubplots();
+	}
+}
+
+void coupledlogistic() {
+
+	static float xs[anumber], ys[anumber];
+
+	int mudummy = 0;
+	for (float mu = amu_min; mu <= amu_max; mu += ((amu_max - amu_min) / (float)amu_step)) {
+		// simulating the network
+		vector<float> blacklistx = { 0 };
+		vector<float> blacklisty = { 0 };
+		float x[ano_of_steps + 1] = {};
+		float y[ano_of_steps + 1] = {};
+		x[0] = ax_0;
+		y[0] = ay_0;
+		for (int t = 0; t < ano_of_steps; t++)
+		{
+			//std::cout << "x[" << t << "] = " << x[t] << ", mu = " << mu << std::endl;
+			float* output = step2(x[t], y[t], mu, mu, alpha, alpha);
+			x[t + 1] = output[0];
+			y[t + 1] = output[1];
+
+			int nudgedummy = 0;
+			if (t > acutoff /* && !asearch(blacklist, x[t])*/) {
+				if (nudgedummy++ == 20) {
+					std::random_device dev;
+					std::mt19937 gen(dev());
+					std::uniform_real_distribution<float> dist6(-0.2, 0.2);
+
+					float ab = dist6(gen);
+					x[t] += ab;
+					y[t] -= ab;
+				}
+				xs[mudummy] = x[t];
+				ys[mudummy] = y[t];
+				mudummy++;
+				blacklistx.push_back(atruncate(x[t]));
+				blacklisty.push_back(atruncate(x[t]));
+			}
+		}
+	}
+
+
+	Graph(coupledlogfunc, xs, ys, -3.0f);
 }

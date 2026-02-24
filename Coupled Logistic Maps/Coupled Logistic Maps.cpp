@@ -20,7 +20,7 @@ int main()
 	//coupled cobweb = 7
 	//separated step coupled = 8
 	//time step coupled = 9
-	int mode = 9;
+	int mode = 11;
 
 	if (mode == 0) {
 		cobweb(0.5f);
@@ -54,6 +54,9 @@ int main()
 	}
 	if (mode == 10) {
 		gausspopulation();
+	}
+	if (mode == 11) {
+		coupledlogistic();
 	}
 }
 
