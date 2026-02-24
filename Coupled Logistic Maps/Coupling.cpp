@@ -406,24 +406,28 @@ bool asearch(vector<float> a, float b) {
 /* initialising variables */
 
 // mu
-float amu_min = 1;
+float amu_min = 0;
 float amu_max = 4;
 int const amu_step = 1000;
 
 //starting values
-float ax_0 = 0.51;
+float ax_0 = 0.1;
 float ay_0 = 0.5;
-float alpha = 0.1;
+//float alpha = 0.1;
 
 //resolution
-int const ano_of_steps = 2000;
-int const acutoff = 1800;
+int const ano_of_steps = 5400;
+int const acutoff = 3400;
 
 //number of total points
 int const anumber = (amu_step + 1) * (ano_of_steps - acutoff - 1);
 
 
-void coupledlogfunc(float* xs, float* ys, float a) {
+void coupledlogfunc(float* axs, float* ays, float a) {
+
+	static float xs[anumber], ys[anumber];
+
+	static float alpha = 0;
 
 	static float mus1[anumber];
 	int mudummy1 = 0;
@@ -438,9 +442,10 @@ void coupledlogfunc(float* xs, float* ys, float a) {
 	static float rratios[2] = { 1.0f ,1.0f };
 	static ImPlotSubplotFlags flagsa = ImPlotSubplotFlags_ShareItems;
 
-	if(ImPlot::BeginSubplots("My Subplots", 2, 1, ImVec2(-1, -1), flagsa, rratios, cratios)) {
+	if(ImPlot::BeginSubplots("My Subplots", 2, 1, ImVec2(-1, -30), flagsa, rratios, cratios)) {
 		if (ImPlot::BeginPlot("Pop 1", ImVec2())) {
 			ImPlot::SetupAxes("x", "r");
+			ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.0f, ImVec4(0, 0, 1, 1), 1.0f, ImVec4(0, 0, 0, 0));
 			ImPlot::PlotScatter("Data 1", mus1, xs, anumber);
 			ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
 			ImPlot::PopStyleVar();
@@ -449,6 +454,7 @@ void coupledlogfunc(float* xs, float* ys, float a) {
 		if (ImPlot::BeginPlot("Pop 2", ImVec2())) {
 
 			ImPlot::SetupAxes("y", "r");
+			ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.0f, ImVec4(1, 0, 0, 1), 1.0f, ImVec4(0, 0, 0, 0));
 			ImPlot::PlotScatter("Data 2", mus1, ys, anumber);
 			ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
 			ImPlot::PopStyleVar();
@@ -456,48 +462,110 @@ void coupledlogfunc(float* xs, float* ys, float a) {
 		}
 		ImPlot::EndSubplots();
 	}
-}
+	ImGui::SetNextItemWidth(150.0f);
+	ImGui::InputFloat("##Alpha", &alpha);
+	ImGui::SameLine();
+	if (ImGui::Button("Alpha")) {
+		
+		int mudummy = 0;
+		for (float mu = amu_min; mu <= amu_max; mu += ((amu_max - amu_min) / (float)amu_step)) {
+			// simulating the network
+			vector<float> blacklistx = { 0 };
+			vector<float> blacklisty = { 0 };
+			float x[ano_of_steps + 1] = {};
+			float y[ano_of_steps + 1] = {};
+			x[0] = ax_0;
+			y[0] = ay_0;
+			for (int t = 0; t < ano_of_steps; t++)
+			{
+				//std::cout << "x[" << t << "] = " << x[t] << ", mu = " << mu << std::endl;
+				float* output = step2(x[t], y[t], mu, mu, alpha, alpha);
+				x[t + 1] = output[0];
+				y[t + 1] = output[1];
 
-void coupledlogistic() {
-
-	static float xs[anumber], ys[anumber];
-
-	int mudummy = 0;
-	for (float mu = amu_min; mu <= amu_max; mu += ((amu_max - amu_min) / (float)amu_step)) {
-		// simulating the network
-		vector<float> blacklistx = { 0 };
-		vector<float> blacklisty = { 0 };
-		float x[ano_of_steps + 1] = {};
-		float y[ano_of_steps + 1] = {};
-		x[0] = ax_0;
-		y[0] = ay_0;
-		for (int t = 0; t < ano_of_steps; t++)
-		{
-			//std::cout << "x[" << t << "] = " << x[t] << ", mu = " << mu << std::endl;
-			float* output = step2(x[t], y[t], mu, mu, alpha, alpha);
-			x[t + 1] = output[0];
-			y[t + 1] = output[1];
-
-			int nudgedummy = 0;
-			if (t > acutoff /* && !asearch(blacklist, x[t])*/) {
-				if (nudgedummy++ == 20) {
-					std::random_device dev;
-					std::mt19937 gen(dev());
-					std::uniform_real_distribution<float> dist6(-0.2, 0.2);
-
-					float ab = dist6(gen);
-					x[t] += ab;
-					y[t] -= ab;
+				if (t > acutoff /* && !asearch(blacklist, x[t])*/) {
+					xs[mudummy] = x[t];
+					ys[mudummy] = y[t];
+					mudummy++;
+					blacklistx.push_back(atruncate(x[t]));
+					blacklisty.push_back(atruncate(x[t]));
 				}
-				xs[mudummy] = x[t];
-				ys[mudummy] = y[t];
-				mudummy++;
-				blacklistx.push_back(atruncate(x[t]));
-				blacklisty.push_back(atruncate(x[t]));
 			}
 		}
 	}
+}
+
+void coupledlogistic() {
+	static float axs[1], ays[1];
+
+	Graph(coupledlogfunc, axs, ays, -3.0f);
+}
+
+float bx_0 = 0.1;
+float by_0 = 0.5;
+
+int const bno_of_steps = 125401;
+int const bcutoff = 3400;
+
+int const bnumber = 2* (bno_of_steps - bcutoff + 1);
+
+void phasefunc(float* bxs, float* bys, float b) {
+
+	static float xs[bnumber], ys[bnumber];
+
+	static float r = 3.7;
+	static float s = 3.7;
+	static float alpha = 0.1;
 
 
-	Graph(coupledlogfunc, xs, ys, -3.0f);
+	if (ImPlot::BeginPlot("Pop 1", ImVec2(-1,-30))) {
+			ImPlot::SetupAxes("x", "r");
+			ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.0f, ImVec4(1, 0, 0, 1), 1.0f, ImVec4(0, 0, 0, 0));
+			ImPlot::PlotScatter("Data 1", xs, ys, bnumber);
+			ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
+			ImPlot::PopStyleVar();
+			ImPlot::EndPlot();
+	}
+
+	ImGui::SetNextItemWidth(150.0f);
+	ImGui::InputFloat("##Alpha", &alpha);
+	ImGui::SameLine();
+
+	ImGui::SetNextItemWidth(150.0f);
+	ImGui::InputFloat("##r", &r);
+	ImGui::SameLine();
+
+	ImGui::SetNextItemWidth(150.0f);
+	ImGui::InputFloat("##s", &s);
+	ImGui::SameLine();
+
+
+	if (ImGui::Button("Alpha") || ImGui::Button("r") || ImGui::Button("s")) {
+	int mudummy = 0;
+		// simulating the network
+		float x[bno_of_steps + 1] = {};
+		float y[bno_of_steps + 1] = {};
+		x[0] = bx_0;
+		y[0] = by_0;
+		for (int t = 0; t < bno_of_steps; t++)
+		{
+			std::cout << t << std::endl;
+			//std::cout << "x[" << t << "] = " << x[t] << ", mu = " << mu << std::endl;
+			float* output = step2(x[t], y[t], r, s, alpha, alpha);
+			x[t + 1] = output[0];
+			y[t + 1] = output[1];
+
+			if (t > bcutoff) {
+				xs[mudummy] = x[t + 1];
+				ys[mudummy] = y[t + 1];
+				mudummy++;
+			}
+		}
+	}
+}
+
+void phasediagram() {
+	static float axs[1], ays[1];
+
+	Graph(phasefunc, axs, ays, -3.0f);
 }

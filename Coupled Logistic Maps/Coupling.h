@@ -4,3 +4,4 @@ void coupledcobweb();
 void sepcouple();
 void timecouple();
 void coupledlogistic();
+void phasediagram();

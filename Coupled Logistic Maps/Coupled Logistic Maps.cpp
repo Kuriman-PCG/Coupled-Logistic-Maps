@@ -20,7 +20,7 @@ int main()
 	//coupled cobweb = 7
 	//separated step coupled = 8
 	//time step coupled = 9
-	int mode = 11;
+	int mode = 12;
 
 	if (mode == 0) {
 		cobweb(0.5f);
@@ -57,6 +57,9 @@ int main()
 	}
 	if (mode == 11) {
 		coupledlogistic();
+	}
+	if (mode == 12) {
+		phasediagram();
 	}
 }
 
