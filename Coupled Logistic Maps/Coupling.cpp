@@ -504,10 +504,10 @@ void coupledlogistic() {
 float bx_0 = 0.1;
 float by_0 = 0.5;
 
-int const bno_of_steps = 125401;
-int const bcutoff = 3400;
+int const bno_of_steps = 125000;	// Ideally, this variable could be increased, but doing so causes a stack overflow. The exact value that causes this is inconsistent :/
+int const bcutoff = 5000;
 
-int const bnumber = 2* (bno_of_steps - bcutoff + 1);
+int const bnumber = bno_of_steps - bcutoff;
 
 void phasefunc(float* bxs, float* bys, float b) {
 
@@ -519,28 +519,15 @@ void phasefunc(float* bxs, float* bys, float b) {
 
 
 	if (ImPlot::BeginPlot("Pop 1", ImVec2(-1,-30))) {
-			ImPlot::SetupAxes("x", "r");
-			ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.0f, ImVec4(1, 0, 0, 1), 1.0f, ImVec4(0, 0, 0, 0));
+			ImPlot::SetupAxes("x", "y");
+			ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.0f, ImVec4(1, 0.4, 0, 1), 1.0f, ImVec4(0, 0, 0, 0));
 			ImPlot::PlotScatter("Data 1", xs, ys, bnumber);
 			ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
 			ImPlot::PopStyleVar();
 			ImPlot::EndPlot();
 	}
 
-	ImGui::SetNextItemWidth(150.0f);
-	ImGui::InputFloat("##Alpha", &alpha);
-	ImGui::SameLine();
-
-	ImGui::SetNextItemWidth(150.0f);
-	ImGui::InputFloat("##r", &r);
-	ImGui::SameLine();
-
-	ImGui::SetNextItemWidth(150.0f);
-	ImGui::InputFloat("##s", &s);
-	ImGui::SameLine();
-
-
-	if (ImGui::Button("Alpha") || ImGui::Button("r") || ImGui::Button("s")) {
+	//if (ImGui::Button("Alpha") || ImGui::Button("r") || ImGui::Button("s")) {
 	int mudummy = 0;
 		// simulating the network
 		float x[bno_of_steps + 1] = {};
@@ -549,19 +536,22 @@ void phasefunc(float* bxs, float* bys, float b) {
 		y[0] = by_0;
 		for (int t = 0; t < bno_of_steps; t++)
 		{
-			std::cout << t << std::endl;
+			//std::cout << t << std::endl;
 			//std::cout << "x[" << t << "] = " << x[t] << ", mu = " << mu << std::endl;
 			float* output = step2(x[t], y[t], r, s, alpha, alpha);
 			x[t + 1] = output[0];
 			y[t + 1] = output[1];
 
-			if (t > bcutoff) {
-				xs[mudummy] = x[t + 1];
-				ys[mudummy] = y[t + 1];
+			if (t >= bcutoff) {
+				xs[mudummy] = x[t];
+				ys[mudummy] = y[t];
 				mudummy++;
 			}
 		}
-	}
+	//}
+	ImGui::SliderFloat("Alpha", &alpha, 0, 1, "%.3f");
+	ImGui::SliderFloat("r", &r, 0, 4, "%.3f");
+	ImGui::SliderFloat("s", &s, 0, 4, "%.3f");
 }
 
 void phasediagram() {
