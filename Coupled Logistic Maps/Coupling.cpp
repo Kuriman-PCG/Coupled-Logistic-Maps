@@ -25,6 +25,13 @@ float* step2(float x_n, float y_n, float a, float b, float c, float d) {
 	return xy;
 }
 
+float* step3(float x_n, float y_n, float a, float b, float c, float d) {
+	float x_n1 = (1-c) * a * x_n * (1 - x_n) + d * b * y_n * (1 - y_n);
+	float y_n1 = (1-d) * b * y_n * (1 - y_n) + c * a * x_n * (1 - x_n);
+	float xy[2] = { x_n1, y_n1 };
+	return xy;
+}
+
 struct ScrollingBuffer {
 	int MaxSize;
 	int Offset;
@@ -411,8 +418,8 @@ float amu_max = 4;
 int const amu_step = 1000;
 
 //starting values
-float ax_0 = 0.1;
-float ay_0 = 0.5;
+float ax_0 = 0.3;
+float ay_0 = 0.4;
 //float alpha = 0.1;
 
 //resolution
@@ -438,12 +445,12 @@ void coupledlogfunc(float* axs, float* ays, float a) {
 	}
 
 
-	static float cratios[1] = { 1.0f };
-	static float rratios[2] = { 1.0f ,1.0f };
-	static ImPlotSubplotFlags flagsa = ImPlotSubplotFlags_ShareItems;
+	//static float cratios[1] = { 1.0f };
+	//static float rratios[2] = { 1.0f ,1.0f };
+	//static ImPlotSubplotFlags flagsa = ImPlotSubplotFlags_ShareItems;
 
-	if(ImPlot::BeginSubplots("My Subplots", 2, 1, ImVec2(-1, -30), flagsa, rratios, cratios)) {
-		if (ImPlot::BeginPlot("Pop 1", ImVec2())) {
+	//if(ImPlot::BeginSubplots("My Subplots", 2, 1, ImVec2(-1, -30), flagsa, rratios, cratios)) {
+		if (ImPlot::BeginPlot("Pop 1", ImVec2(-1,-30))) {
 			ImPlot::SetupAxes("x", "r");
 			ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.0f, ImVec4(0, 0, 1, 1), 1.0f, ImVec4(0, 0, 0, 0));
 			ImPlot::PlotScatter("Data 1", mus1, xs, anumber);
@@ -451,17 +458,18 @@ void coupledlogfunc(float* axs, float* ays, float a) {
 			ImPlot::PopStyleVar();
 			ImPlot::EndPlot();
 		}
+		/* this produces a second bifurcation diagram for y, but they are always identical so it has been removed for performance reasons
 		if (ImPlot::BeginPlot("Pop 2", ImVec2())) {
 
-			ImPlot::SetupAxes("y", "r");
+			ImPlot::SetupAxes("y", "s");
 			ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.0f, ImVec4(1, 0, 0, 1), 1.0f, ImVec4(0, 0, 0, 0));
 			ImPlot::PlotScatter("Data 2", mus1, ys, anumber);
 			ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
 			ImPlot::PopStyleVar();
 			ImPlot::EndPlot();
-		}
-		ImPlot::EndSubplots();
-	}
+		} */
+		//ImPlot::EndSubplots();
+	//}
 	ImGui::SetNextItemWidth(150.0f);
 	ImGui::InputFloat("##Alpha", &alpha);
 	ImGui::SameLine();
