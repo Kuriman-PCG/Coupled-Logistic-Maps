@@ -436,21 +436,23 @@ void coupledlogfunc(float* axs, float* ays, float a) {
 
 	static float alpha = 0;
 
-	static float mus1[anumber];
+	static float mus1[anumber], mus2[amu_step], exps[amu_step];
 	int mudummy1 = 0;
+	int mudummy2 = 0;
 	for (float mu = amu_min; mu <= amu_max; mu += ((amu_max - amu_min) / (float)amu_step)) {
+		mus2[mudummy2++] = mu;
 		for (int t = 0; t < ano_of_steps; t++)
 			if (t > acutoff)
 				mus1[mudummy1++] = mu;
 	}
 
 
-	//static float cratios[1] = { 1.0f };
-	//static float rratios[2] = { 1.0f ,1.0f };
-	//static ImPlotSubplotFlags flagsa = ImPlotSubplotFlags_ShareItems;
+	static float cratios[1] = { 1.0f };
+	static float rratios[2] = { 1.0f ,1.0f };
+	static ImPlotSubplotFlags flagsa = ImPlotSubplotFlags_LinkAllX;
 
-	//if(ImPlot::BeginSubplots("My Subplots", 2, 1, ImVec2(-1, -30), flagsa, rratios, cratios)) {
-		if (ImPlot::BeginPlot("Pop 1", ImVec2(-1,-30))) {
+	if(ImPlot::BeginSubplots("My Subplots", 2, 1, ImVec2(-1, -60), flagsa, rratios, cratios)) {
+		if (ImPlot::BeginPlot("Pop 1", ImVec2(/*-1, -30*/))) {
 			ImPlot::SetupAxes("x", "r");
 			ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.0f, ImVec4(0, 0, 1, 1), 1.0f, ImVec4(0, 0, 0, 0));
 			ImPlot::PlotScatter("Data 1", mus1, xs, anumber);
@@ -458,24 +460,25 @@ void coupledlogfunc(float* axs, float* ays, float a) {
 			ImPlot::PopStyleVar();
 			ImPlot::EndPlot();
 		}
-		/* this produces a second bifurcation diagram for y, but they are always identical so it has been removed for performance reasons
+		/* this produces a second bifurcation diagram for y, but they are always identical so it has been removed for performance reasons*/
 		if (ImPlot::BeginPlot("Pop 2", ImVec2())) {
 
 			ImPlot::SetupAxes("y", "s");
 			ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.0f, ImVec4(1, 0, 0, 1), 1.0f, ImVec4(0, 0, 0, 0));
-			ImPlot::PlotScatter("Data 2", mus1, ys, anumber);
+			ImPlot::PlotScatter("Data 2", mus2, exps, amu_step);
 			ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
 			ImPlot::PopStyleVar();
 			ImPlot::EndPlot();
-		} */
-		//ImPlot::EndSubplots();
-	//}
+		} 
+		ImPlot::EndSubplots();
+	}
 	ImGui::SetNextItemWidth(150.0f);
 	ImGui::InputFloat("##Alpha", &alpha);
 	ImGui::SameLine();
 	if (ImGui::Button("Alpha")) {
 		
 		int mudummy = 0;
+		int expdummy = 0;
 		for (float mu = amu_min; mu <= amu_max; mu += ((amu_max - amu_min) / (float)amu_step)) {
 			// simulating the network
 			vector<float> blacklistx = { 0 };
@@ -484,6 +487,8 @@ void coupledlogfunc(float* axs, float* ays, float a) {
 			float y[ano_of_steps + 1] = {};
 			x[0] = ax_0;
 			y[0] = ay_0;
+			float exp = 0.0f;
+			exp = 0.0f;
 			for (int t = 0; t < ano_of_steps; t++)
 			{
 				//std::cout << "x[" << t << "] = " << x[t] << ", mu = " << mu << std::endl;
@@ -497,8 +502,10 @@ void coupledlogfunc(float* axs, float* ays, float a) {
 					mudummy++;
 					blacklistx.push_back(atruncate(x[t]));
 					blacklisty.push_back(atruncate(x[t]));
+					exp += log(abs(mu * (1.0f - (2.0f * x[t])) - alpha));
 				}
 			}
+			exps[expdummy++] = exp / (float)(ano_of_steps - acutoff);
 		}
 	}
 }
@@ -566,4 +573,125 @@ void phasediagram() {
 	static float axs[1], ays[1];
 
 	Graph(phasefunc, axs, ays, -3.0f);
+}
+
+/* initialising variables */
+
+// mu
+float cmu_min = 0;
+float cmu_max = 4;
+int const cmu_step = 1000;
+
+//alpha
+int const alpha_step = 200;
+
+//starting values
+float cx_0 = 0.55;
+float cy_0 = 0.6;
+//float alpha = 0.1;
+
+//resolution
+int const cno_of_steps = 5400;
+int const ccutoff = 3400;
+
+//number of total points
+int const cnumber = (cmu_step + 1) * (cno_of_steps - ccutoff - 1);
+
+
+void coupledlogfuncanim(float* axs, float* ays, float a) {
+
+	static float xs[anumber], ys[anumber];
+
+	static float alpha = 0;
+	static int alphadummy = 0;
+	static bool anim = false;
+
+	static float mus1[anumber], mus2[amu_step], exps[amu_step];
+	static float alphas[alpha_step], values[alpha_step];
+	int mudummy1 = 0;
+	int mudummy2 = 0;
+	for (float mu = amu_min; mu <= amu_max; mu += ((amu_max - amu_min) / (float)amu_step)) {
+		mus2[mudummy2++] = mu;
+		for (int t = 0; t < ano_of_steps; t++)
+			if (t > acutoff)
+				mus1[mudummy1++] = mu;
+	}
+
+
+	static float cratios[1] = { 1.0f };
+	static float rratios[2] = { 1.0f ,1.0f };
+	static ImPlotSubplotFlags flagsa = ImPlotSubplotFlags_None;
+
+	if (ImPlot::BeginSubplots("My Subplots", 2, 1, ImVec2(-1, -60), flagsa, rratios, cratios)) {
+		if (ImPlot::BeginPlot("Pop 1", ImVec2(/*-1, -30*/))) {
+			ImPlot::SetupAxes("x", "r");
+			ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.0f, ImVec4(0, 0, 1, 1), 1.0f, ImVec4(0, 0, 0, 0));
+			ImPlot::PlotScatter("Data 1", mus1, xs, anumber);
+			ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
+			ImPlot::PopStyleVar();
+			ImPlot::EndPlot();
+		}
+		/* this produces a second bifurcation diagram for y, but they are always identical so it has been removed for performance reasons*/
+		if (ImPlot::BeginPlot("Pop 2", ImVec2())) {
+
+			ImPlot::SetupAxes("y", "s");
+			ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.0f, ImVec4(1, 0, 0, 1), 1.0f, ImVec4(0, 0, 0, 0));
+			ImPlot::PlotScatter("Data 2", alphas, values, alpha_step);
+			ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
+			ImPlot::PopStyleVar();
+			ImPlot::EndPlot();
+		}
+		ImPlot::EndSubplots();
+	}
+	ImGui::SetNextItemWidth(150.0f);
+	ImGui::InputFloat("##Alpha", &alpha);
+	ImGui::SameLine();
+	if (ImGui::Button("Anim")) {
+		alpha = 0.0f;
+		alphadummy = 0;
+		anim = true;
+	}
+	if (anim) {
+		int mudummy = 0;
+		float value = 0.0f;
+		float muvalue = 0.0f;
+		for (float mu = amu_min; mu <= amu_max; mu += ((amu_max - amu_min) / (float)amu_step)) {
+			// simulating the network
+			vector<float> blacklistx = { 0 };
+			vector<float> blacklisty = { 0 };
+			float x[ano_of_steps + 1] = {};
+			float y[ano_of_steps + 1] = {};
+			x[0] = ax_0;
+			y[0] = ay_0;
+			for (int t = 0; t < ano_of_steps; t++)
+			{
+				//std::cout << "x[" << t << "] = " << x[t] << ", mu = " << mu << std::endl;
+				float* output = step2(x[t], y[t], mu, mu, alpha, alpha);
+				x[t + 1] = output[0];
+				y[t + 1] = output[1];
+
+				if (t > acutoff /* && !asearch(blacklist, x[t])*/) {
+					if (x[t] > value && mu > 2.8f - 2.0f * alpha) {
+						value = x[t];
+						muvalue = mu;
+					}
+					xs[mudummy] = x[t];
+					ys[mudummy] = y[t];
+					mudummy++;
+					blacklistx.push_back(atruncate(x[t]));
+					blacklisty.push_back(atruncate(x[t]));
+				}
+			}
+		}
+		alphas[alphadummy] = alpha;
+		values[alphadummy++] = value;
+		alpha += 1.0f / alpha_step;
+		if (alpha >= 1.0f) anim = false;
+	}
+}
+
+void coupledlogisticanim() {
+	static float axs[1], ays[1];
+
+	Graph(coupledlogfuncanim, axs, ays, -3.0f);
 }

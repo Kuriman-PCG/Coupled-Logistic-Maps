@@ -5,3 +5,4 @@ void sepcouple();
 void timecouple();
 void coupledlogistic();
 void phasediagram();
+void coupledlogisticanim();
