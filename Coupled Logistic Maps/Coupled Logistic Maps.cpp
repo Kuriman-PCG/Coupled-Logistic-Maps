@@ -7,6 +7,7 @@
 #include "gillespie.h"
 #include "Coupling.h"
 #include "Matrix.h"
+#include "Critical.h"
 
 int main()
 {
@@ -20,7 +21,7 @@ int main()
 	//coupled cobweb = 7
 	//separated step coupled = 8
 	//time step coupled = 9
-	int mode = 13;
+	int mode = 14;
 
 	if (mode == 0) {
 		cobweb(0.5f);
@@ -63,6 +64,9 @@ int main()
 	}
 	if (mode == 13) {
 		coupledlogisticanim();
+	}
+	if (mode == 14) {
+		criticalvalues();
 	}
 }
 
