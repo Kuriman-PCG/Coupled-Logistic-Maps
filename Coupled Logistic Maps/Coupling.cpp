@@ -458,7 +458,7 @@ void coupledlogfunc(float* axs, float* ays, float a) {
 	float upper_envelope_x[101] = { 0 };
 	for (int i = 0; i < 101; i++) {
 		upper_envelope_r[i] = i / 25.0f;
-		upper_envelope_x[i] = (1.0f / (4.0f - 4.0f * alpha)) * upper_envelope_r[i] + 0.5f - 1/(2.0f - 2.0f * alpha);
+		upper_envelope_x[i] = (1.0f / (4.0f - 2.0f * alpha)) * upper_envelope_r[i];
 	}
 
 	float lower_envelope_r[101] = { 0 };
