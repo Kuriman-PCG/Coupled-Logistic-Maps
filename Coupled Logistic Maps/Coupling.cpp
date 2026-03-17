@@ -494,6 +494,12 @@ void coupledlogfunc(float* axs, float* ays, float a) {
 	ImGui::SetNextItemWidth(150.0f);
 	ImGui::InputFloat("##Alpha", &alpha);
 	ImGui::SameLine();
+	ImGui::SetNextItemWidth(150.0f);
+	ImGui::InputFloat("##x0", &ax_0);
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(150.0f);
+	ImGui::InputFloat("##y0", &ay_0);
+	ImGui::SameLine();
 	if (ImGui::Button("Alpha")) {
 		
 		int mudummy = 0;
@@ -611,8 +617,8 @@ float cy_0 = 0.6;
 //float alpha = 0.1;
 
 //resolution
-int const cno_of_steps = 5400;
-int const ccutoff = 3400;
+int const cno_of_steps = 7400;
+int const ccutoff = 5400;
 
 //number of total points
 int const cnumber = (cmu_step + 1) * (cno_of_steps - ccutoff - 1);
@@ -620,20 +626,20 @@ int const cnumber = (cmu_step + 1) * (cno_of_steps - ccutoff - 1);
 
 void coupledlogfuncanim(float* axs, float* ays, float a) {
 
-	static float xs[anumber], ys[anumber];
+	static float xs[cnumber], ys[cnumber];
 
 	static float alpha = 0;
 	static int alphadummy = 0;
 	static bool anim = false;
 
-	static float mus1[anumber], mus2[amu_step], exps[amu_step];
+	static float mus1[cnumber], mus2[cmu_step], exps[cmu_step];
 	static float alphas[alpha_step], values[alpha_step];
 	int mudummy1 = 0;
 	int mudummy2 = 0;
-	for (float mu = amu_min; mu <= amu_max; mu += ((amu_max - amu_min) / (float)amu_step)) {
+	for (float mu = cmu_min; mu <= cmu_max; mu += ((cmu_max - cmu_min) / (float)cmu_step)) {
 		mus2[mudummy2++] = mu;
-		for (int t = 0; t < ano_of_steps; t++)
-			if (t > acutoff)
+		for (int t = 0; t < cno_of_steps; t++)
+			if (t > ccutoff)
 				mus1[mudummy1++] = mu;
 	}
 
@@ -646,7 +652,7 @@ void coupledlogfuncanim(float* axs, float* ays, float a) {
 		if (ImPlot::BeginPlot("Pop 1", ImVec2(/*-1, -30*/))) {
 			ImPlot::SetupAxes("x", "r");
 			ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.0f, ImVec4(0, 0, 1, 1), 1.0f, ImVec4(0, 0, 0, 0));
-			ImPlot::PlotScatter("Data 1", mus1, xs, anumber);
+			ImPlot::PlotScatter("Data 1", mus1, xs, cnumber);
 			ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
 			ImPlot::PopStyleVar();
 			ImPlot::EndPlot();
@@ -666,31 +672,50 @@ void coupledlogfuncanim(float* axs, float* ays, float a) {
 	ImGui::SetNextItemWidth(150.0f);
 	ImGui::InputFloat("##Alpha", &alpha);
 	ImGui::SameLine();
+	ImGui::SetNextItemWidth(150.0f);
+	ImGui::InputFloat("##x0", &cx_0);
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(150.0f);
+	ImGui::InputFloat("##y0", &cy_0);
+	ImGui::SameLine();
 	if (ImGui::Button("Anim")) {
 		alpha = 0.0f;
 		alphadummy = 0;
 		anim = true;
 	}
+	ImGui::SameLine();
+	if (ImGui::Button("Toggle")) anim = !anim;
 	if (anim) {
 		int mudummy = 0;
 		float value = 0.0f;
 		float muvalue = 0.0f;
-		for (float mu = amu_min; mu <= amu_max; mu += ((amu_max - amu_min) / (float)amu_step)) {
+		for (float mu = cmu_min; mu <= cmu_max; mu += ((cmu_max - cmu_min) / (float)cmu_step)) {
 			// simulating the network
 			vector<float> blacklistx = { 0 };
 			vector<float> blacklisty = { 0 };
-			float x[ano_of_steps + 1] = {};
-			float y[ano_of_steps + 1] = {};
-			x[0] = ax_0;
-			y[0] = ay_0;
-			for (int t = 0; t < ano_of_steps; t++)
+			float x[cno_of_steps + 1] = {};
+			float y[cno_of_steps + 1] = {};
+			x[0] = cx_0;
+			y[0] = cy_0;
+			for (int t = 0; t < cno_of_steps; t++)
 			{
 				//std::cout << "x[" << t << "] = " << x[t] << ", mu = " << mu << std::endl;
 				float* output = step2(x[t], y[t], mu, mu, alpha, alpha);
 				x[t + 1] = output[0];
 				y[t + 1] = output[1];
 
-				if (t > acutoff /* && !asearch(blacklist, x[t])*/) {
+
+				if ((t % 10 == 0) && t < 00) {
+					std::random_device dev;
+					std::mt19937 gen(dev());
+					std::uniform_real_distribution<float> dist6(-0.1, 0.1);
+
+					float ab = dist6(gen);
+
+					x[t + 1] += dist6(gen);
+				}
+
+				if (t > ccutoff /* && !asearch(blacklist, x[t])*/) {
 					if (x[t] > value && mu > 2.8f - 2.0f * alpha) {
 						value = x[t];
 						muvalue = mu;

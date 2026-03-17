@@ -20,7 +20,11 @@ int main()
 	//coupled cobweb = 7
 	//separated step coupled = 8
 	//time step coupled = 9
-	int mode = 11;
+	//gauss population = 10
+	//coupled logistic map = 11
+	//phase diagram = 12
+	//coupled logsitic map animated = 13
+	int mode = 13;
 
 	if (mode == 0) {
 		cobweb(0.5f);
