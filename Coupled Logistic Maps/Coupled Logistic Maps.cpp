@@ -24,7 +24,7 @@ int main()
 	//coupled logistic map = 11
 	//phase diagram = 12
 	//coupled logsitic map animated = 13
-	int mode = 13;
+	int mode = 12;
 
 	if (mode == 0) {
 		cobweb(0.5f);

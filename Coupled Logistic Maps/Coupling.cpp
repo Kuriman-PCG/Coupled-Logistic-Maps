@@ -557,9 +557,10 @@ void phasefunc(float* bxs, float* bys, float b) {
 	static float r = 3.7;
 	static float s = 3.7;
 	static float alpha = 0.1;
+	static bool rsequal = true;
 
 
-	if (ImPlot::BeginPlot("Pop 1", ImVec2(-1,-30))) {
+	if (ImPlot::BeginPlot("Pop 1", ImVec2(-1,-90))) {
 			ImPlot::SetupAxes("x", "y");
 			ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.0f, ImVec4(1, 0.4, 0, 1), 1.0f, ImVec4(0, 0, 0, 0));
 			ImPlot::PlotScatter("Data 1", xs, ys, bnumber);
@@ -579,7 +580,7 @@ void phasefunc(float* bxs, float* bys, float b) {
 		{
 			//std::cout << t << std::endl;
 			//std::cout << "x[" << t << "] = " << x[t] << ", mu = " << mu << std::endl;
-			float* output = step2(x[t], y[t], r, s, alpha, alpha);
+			float* output = step2(x[t], y[t], r, rsequal ? r : s, alpha, alpha);
 			x[t + 1] = output[0];
 			y[t + 1] = output[1];
 
@@ -592,7 +593,9 @@ void phasefunc(float* bxs, float* bys, float b) {
 	//}
 	ImGui::SliderFloat("Alpha", &alpha, 0, 1, "%.3f");
 	ImGui::SliderFloat("r", &r, 0, 4, "%.3f");
-	ImGui::SliderFloat("s", &s, 0, 4, "%.3f");
+	if (rsequal == false) ImGui::SliderFloat("s", &s, 0, 4, "%.3f");
+	ImGui::Checkbox("Lock r to s", &rsequal);
+
 }
 
 void phasediagram() {
