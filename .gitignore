@@ -364,3 +364,4 @@ FodyWeavers.xsd
 
 imgui.ini
 /Coupled Logistic Maps/Coupled Logistic Maps.vcxproj
+Coupled Logistic Maps/data.csv

@@ -7,6 +7,7 @@
 #include "gillespie.h"
 #include "Coupling.h"
 #include "Matrix.h"
+#include "Critical.h"
 
 int main()
 {
@@ -24,6 +25,7 @@ int main()
 	//coupled logistic map = 11
 	//phase diagram = 12
 	//coupled logsitic map animated = 13
+	//critical points = 14
 	int mode = 12;
 
 	if (mode == 0) {
@@ -67,6 +69,9 @@ int main()
 	}
 	if (mode == 13) {
 		coupledlogisticanim();
+	}
+	if (mode == 14) {
+		criticalvalues();
 	}
 }
 
