@@ -204,7 +204,7 @@ int Graph(void (*func)(float*, float*, float), float* mus, float* xs, float numb
             ImPlot::BeginPlot("Line Plots", ImVec2(-1, -50));
         }
         else {
-            ImPlot::BeginPlot("Line Plots", ImVec2(-1, -30));
+            ImPlot::BeginPlot("Line Plots", ImVec2(-1, -1));
         }
 
         //Function goes here:---------------------------------------------------------------------------------------------------------------------------------------------------------
