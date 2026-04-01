@@ -198,11 +198,16 @@ int Graph(void (*func)(float*, float*, float), float* mus, float* xs, float numb
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
+        
         ImGui::Begin("Hello, world!");
 
         if (number == -1.0f) {
             ImPlot::BeginPlot("Line Plots", ImVec2(-1, -50));
         }
+        else if (number == -2.0f) {
+            ImPlot::BeginPlot("Line Plots", ImVec2(-1, -120));
+        }
+        else if (number == -3.0f){}
         else {
             ImPlot::BeginPlot("Line Plots", ImVec2(-1, -1));
         }
@@ -213,7 +218,7 @@ int Graph(void (*func)(float*, float*, float), float* mus, float* xs, float numb
 
         //Function end :--------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-        ImPlot::EndPlot();
+        if (number != -3.0f) ImPlot::EndPlot();
         ImGui::End();
 
         // Rendering
