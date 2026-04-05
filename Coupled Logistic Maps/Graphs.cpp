@@ -77,16 +77,16 @@ bool search(vector<float> a, float b) {
 /* initialising variables */
 
 // mu
-float mu_min = -2;
+float mu_min = 0;
 float mu_max = 4;
-int const mu_step = 1000;
+int const mu_step = 5000;
 
 //starting value of x
 float x_0 = 0.5;
 
 //resolution
-int const no_of_steps = 1000;
-int const cutoff = 900;
+int const no_of_steps = 5000;
+int const cutoff = 1000;
 
 //number of total points
 int const number = (mu_step + 1) * (no_of_steps - cutoff - 1);
@@ -104,8 +104,20 @@ void logfunc(float* xs, float* exps, float a) {
 				mus1[mudummy1++] = mu;
 	}
 
+	//setting up style for the plot
+	ImGui::StyleColorsLight();
+	ImPlot::StyleColorsLight();
+	ImPlotStyle& style = ImPlot::GetStyle();
+	style.PlotBorderSize = 1;
+	style.LineWeight = 1.5f;
+	style.MarkerSize = 4;
+	ImVec4 black = ImVec4(0.25, 0.25, 0.25, 0.75);
+	ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 0.5, black, 0.0f, black);
+	ImPlot::SetupAxes("r", "x");
+	ImPlot::SetupAxesLimits(mu_min, mu_max + 0.05, -0.1, 1.1);
+	
 	ImPlot::PlotScatter("Data 1", mus1, xs, number);
-	ImPlot::PlotLine("Data 2", mus2, exps, mu_step);
+	//ImPlot::PlotLine("Data 2", mus2, exps, mu_step);
 	ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
 	ImPlot::PopStyleVar();
 }
@@ -139,7 +151,7 @@ void logistic() {
 	}
 
 	
-	Graph(logfunc, xs, exps, number);
+	GraphToFile(logfunc, xs, exps, number, "plot.png");
 }
 
 

@@ -3,8 +3,14 @@
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx12.h"
 #include <d3d12.h>
+#include "d3dx12.h"
 #include <dxgi1_5.h>
 #include <tchar.h>
+#include <iostream>
+#include <windows.h>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 
 #include "implot.h"
 #include <math.h>
@@ -97,6 +103,13 @@ static HANDLE                       g_hSwapChainWaitableObject = nullptr;
 static ID3D12Resource* g_mainRenderTargetResource[APP_NUM_BACK_BUFFERS] = {};
 static D3D12_CPU_DESCRIPTOR_HANDLE  g_mainRenderTargetDescriptor[APP_NUM_BACK_BUFFERS] = {};
 
+ID3D12Resource* g_exportRenderTarget = nullptr;
+D3D12_CPU_DESCRIPTOR_HANDLE g_exportRTV = {};
+ID3D12DescriptorHeap* g_exportRTVHeap = nullptr;
+ID3D12Resource* g_exportReadbackBuffer = nullptr;
+UINT g_exportWidth = 2400;
+UINT g_exportHeight = 1600;
+
 // Forward declarations of helper functions
 bool CreateDeviceD3D(HWND hWnd);
 void CleanupDeviceD3D();
@@ -162,6 +175,7 @@ int Graph(void (*func)(float*, float*, float), float* mus, float* xs, float numb
     init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle) { return g_pd3dSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle); };
     init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) { return g_pd3dSrvDescHeapAlloc.Free(cpu_handle, gpu_handle); };
     ImGui_ImplDX12_Init(&init_info);
+    ImGui_ImplDX12_CreateDeviceObjects();
 
     // Our state
     bool show_demo_window = true;
@@ -274,6 +288,301 @@ int Graph(void (*func)(float*, float*, float), float* mus, float* xs, float numb
 
     return 0;
 }
+
+static void DummySrvAlloc(ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* cpu, D3D12_GPU_DESCRIPTOR_HANDLE* gpu)
+{
+}
+
+static void DummySrvFree(ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu, D3D12_GPU_DESCRIPTOR_HANDLE gpu)
+{
+}
+
+struct SrvHeapAllocator {
+    UINT offset = 0;
+    ID3D12DescriptorHeap* heap;
+    UINT descriptorSize;
+
+    void Init(ID3D12Device* device, ID3D12DescriptorHeap* h) {
+        heap = h;
+        descriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        offset = 0;
+    }
+
+    void Alloc(D3D12_CPU_DESCRIPTOR_HANDLE* cpu, D3D12_GPU_DESCRIPTOR_HANDLE* gpu) {
+        *cpu = heap->GetCPUDescriptorHandleForHeapStart();
+        (*cpu).ptr += offset * descriptorSize;
+        *gpu = heap->GetGPUDescriptorHandleForHeapStart();
+        (*gpu).ptr += offset * descriptorSize;
+        offset++;
+    }
+
+    void Free(D3D12_CPU_DESCRIPTOR_HANDLE cpu, D3D12_GPU_DESCRIPTOR_HANDLE gpu) {
+        // no-op
+    }
+};
+
+// Dummy Win32 window procedure
+LRESULT CALLBACK DummyWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    return DefWindowProc(hWnd, msg, wParam, lParam);
+}
+
+// Save the plot to a file instead of rendering to screen
+bool GraphToFile(void (*func)(float*, float*, float), float* mus, float* xs, float number, const char* filename) 
+{
+    const UINT width = 4096;
+    const UINT height = 4096;
+
+    //Pick a valid hardware adapter
+    IDXGIFactory5* factory = nullptr;
+    if (FAILED(CreateDXGIFactory1(IID_PPV_ARGS(&factory)))) return false;
+
+    IDXGIAdapter1* adapter = nullptr;
+    for (UINT i = 0; factory->EnumAdapters1(i, &adapter) != DXGI_ERROR_NOT_FOUND; i++) {
+        DXGI_ADAPTER_DESC1 desc;
+        adapter->GetDesc1(&desc);
+        if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) { adapter->Release(); continue; }
+        if (SUCCEEDED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
+            break;
+        adapter->Release();
+    }
+
+    ID3D12Device* device = nullptr;
+    if (FAILED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device)))) return false;
+
+    //Command queue
+    D3D12_COMMAND_QUEUE_DESC qDesc = {};
+    qDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+    ID3D12CommandQueue* cmdQueue = nullptr;
+    if (FAILED(device->CreateCommandQueue(&qDesc, IID_PPV_ARGS(&cmdQueue)))) return false;
+
+    //Command allocator + list
+    ID3D12CommandAllocator* cmdAlloc = nullptr;
+    device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&cmdAlloc));
+    ID3D12GraphicsCommandList* cmdList = nullptr;
+    device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, cmdAlloc, nullptr, IID_PPV_ARGS(&cmdList));
+
+    //RTV heap + render target
+    D3D12_DESCRIPTOR_HEAP_DESC rtvDesc = {};
+    rtvDesc.NumDescriptors = 1;
+    rtvDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+    rtvDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    ID3D12DescriptorHeap* rtvHeap = nullptr;
+    device->CreateDescriptorHeap(&rtvDesc, IID_PPV_ARGS(&rtvHeap));
+
+    D3D12_RESOURCE_DESC texDesc = {};
+    texDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    texDesc.Width = width;
+    texDesc.Height = height;
+    texDesc.DepthOrArraySize = 1;
+    texDesc.MipLevels = 1;
+    texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    texDesc.SampleDesc.Count = 1;
+    texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    texDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+    D3D12_CLEAR_VALUE clearValue = {};
+    clearValue.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    clearValue.Color[0] = 1.0f; clearValue.Color[1] = 1.0f;
+    clearValue.Color[2] = 1.0f; clearValue.Color[3] = 1.0f;
+
+    D3D12_HEAP_PROPERTIES heapProps = {};
+    heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+    ID3D12Resource* renderTarget = nullptr;
+    device->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &texDesc,
+        D3D12_RESOURCE_STATE_RENDER_TARGET, &clearValue, IID_PPV_ARGS(&renderTarget));
+
+    D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = rtvHeap->GetCPUDescriptorHandleForHeapStart();
+    device->CreateRenderTargetView(renderTarget, nullptr, rtvHandle);
+
+    //SRV heap
+    D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
+    srvHeapDesc.NumDescriptors = 32;
+    srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+    ID3D12DescriptorHeap* srvHeap = nullptr;
+    device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&srvHeap));
+
+    static SrvHeapAllocator allocator;
+    allocator.Init(device, srvHeap);
+
+    //Readback buffer
+    D3D12_RESOURCE_DESC readbackDesc = {};
+    readbackDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    readbackDesc.Alignment = 0;
+    readbackDesc.Width = static_cast<UINT64>(width) * height * 4; // 4 bytes per pixel
+    readbackDesc.Height = 1;
+    readbackDesc.DepthOrArraySize = 1;
+    readbackDesc.MipLevels = 1;
+    readbackDesc.Format = DXGI_FORMAT_UNKNOWN;
+    readbackDesc.SampleDesc.Count = 1;
+    readbackDesc.SampleDesc.Quality = 0;
+    readbackDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    readbackDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+    D3D12_HEAP_PROPERTIES readbackHeapProps = {};
+    readbackHeapProps.Type = D3D12_HEAP_TYPE_READBACK;
+    readbackHeapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    readbackHeapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    readbackHeapProps.CreationNodeMask = 1;
+    readbackHeapProps.VisibleNodeMask = 1;
+
+    ID3D12Resource* readbackBuffer = nullptr;
+    HRESULT hr = device->CreateCommittedResource(
+    &readbackHeapProps,
+    D3D12_HEAP_FLAG_NONE,
+    &readbackDesc,
+    D3D12_RESOURCE_STATE_COPY_DEST,
+    nullptr,
+    IID_PPV_ARGS(&readbackBuffer)
+);
+
+if (FAILED(hr) || readbackBuffer == nullptr) {
+    std::cerr << "Failed to create readback buffer! HRESULT: " << std::hex << hr << "\n";
+    return false;
+}
+
+    //ImGui/ImPlot
+    ImGuiContext* ctx = ImGui::CreateContext();
+    ImGui::SetCurrentContext(ctx);
+    ImPlot::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/arial.ttf", 48.0f);
+    io.DisplaySize = ImVec2((float)width, (float)height);
+
+    ImGui_ImplDX12_InitInfo init_info = {};
+    init_info.Device = device;
+    init_info.NumFramesInFlight = 1;
+    init_info.CommandQueue = cmdQueue;
+    init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+    init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
+    init_info.SrvDescriptorHeap = srvHeap;
+    init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* cpu, D3D12_GPU_DESCRIPTOR_HANDLE* gpu) { allocator.Alloc(cpu, gpu); };
+    init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu, D3D12_GPU_DESCRIPTOR_HANDLE gpu) { allocator.Free(cpu, gpu); };
+    ImGui_ImplDX12_Init(&init_info);
+    ImGui_ImplDX12_CreateDeviceObjects();
+
+    //Reset command list
+    cmdAlloc->Reset();
+    cmdList->Reset(cmdAlloc, nullptr);
+
+    ID3D12DescriptorHeap* heaps[] = { srvHeap };
+    cmdList->SetDescriptorHeaps(1, heaps);
+
+    cmdList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+
+    float clearColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f }; // white
+    cmdList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+
+    ImGui_ImplDX12_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(ImVec2((float)width, (float)height));
+
+    ImGui::Begin("Main", nullptr,
+        ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoBringToFrontOnFocus);
+
+    if (ImPlot::BeginPlot("Plot", ImVec2((float)width, (float)height))) {
+        func(mus, xs, number);
+        ImPlot::EndPlot();
+    }
+
+    ImGui::End();
+
+    ImGui::Text("Hello world");
+    ImGui::Render();
+    ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), cmdList);
+
+    //Transition + copy
+    D3D12_RESOURCE_BARRIER barrier = {};
+    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    barrier.Transition.pResource = renderTarget;
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COPY_SOURCE;
+    cmdList->ResourceBarrier(1, &barrier);
+
+    D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint = {};
+    UINT numRows = 0;
+    UINT64 rowSize = 0;
+    UINT64 totalBytes = 0;
+    device->GetCopyableFootprints(&texDesc, 0, 1, 0, &footprint, &numRows, &rowSize, &totalBytes);
+
+    D3D12_TEXTURE_COPY_LOCATION src = {};
+    src.pResource = renderTarget;
+    src.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    src.SubresourceIndex = 0;
+
+    D3D12_TEXTURE_COPY_LOCATION dst = {};
+    dst.pResource = readbackBuffer;
+    dst.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+    dst.PlacedFootprint = footprint;
+
+    cmdList->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
+    cmdList->Close();
+
+    //Execute + fence
+    ID3D12Fence* fence = nullptr;
+    if (FAILED(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)))) {
+        std::cerr << "Failed to create fence!\n";
+        return false;
+    }
+
+    UINT64 fenceValue = 1; // target fence value
+
+    ID3D12CommandList* lists[] = { cmdList };
+    cmdQueue->ExecuteCommandLists(1, lists);
+
+    cmdQueue->Signal(fence, fenceValue);
+
+    HANDLE event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    fence->SetEventOnCompletion(fenceValue, event);
+    WaitForSingleObject(event, INFINITE);
+    CloseHandle(event);
+    fence->Release();
+
+    //Map + save PNG
+    void* mapped = nullptr;
+    readbackBuffer->Map(0, nullptr, &mapped);
+    BYTE* data = (BYTE*)mapped;
+    UINT rowPitch = footprint.Footprint.RowPitch;
+
+    std::vector<BYTE> tightData(width * height * 4);
+
+    for (UINT y = 0; y < height; y++) {
+        memcpy(
+            &tightData[y * width * 4],
+            data + y * rowPitch,
+            width * 4
+        );
+    }
+
+    stbi_write_png(filename, width, height, 4, tightData.data(), width * 4);
+    readbackBuffer->Unmap(0, nullptr);
+
+    //Cleanup
+    ImGui_ImplDX12_Shutdown();
+    ImPlot::DestroyContext();
+    ImGui::DestroyContext();
+
+    readbackBuffer->Release();
+    renderTarget->Release();
+    rtvHeap->Release();
+    srvHeap->Release();
+    cmdList->Release();
+    cmdAlloc->Release();
+    cmdQueue->Release();
+    device->Release();
+    if (adapter) adapter->Release();
+    if (factory) factory->Release();
+
+    return true;
+}
+
 
 // Helper functions
 
