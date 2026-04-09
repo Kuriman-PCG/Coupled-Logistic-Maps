@@ -112,12 +112,21 @@ void logfunc(float* xs, float* exps, float a) {
 	style.LineWeight = 1.5f;
 	style.MarkerSize = 4;
 	ImVec4 black = ImVec4(0.25, 0.25, 0.25, 0.75);
-	ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 0.5, black, 0.0f, black);
+	ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 2, black, 0.0f, black);
 	ImPlot::SetupAxes("r", "x");
-	ImPlot::SetupAxesLimits(mu_min, mu_max + 0.05, -0.1, 1.1);
+	//ImPlot::SetupAxesLimits(mu_min, mu_max + 0.05, -0.05, 1.05);
+	ImPlot::SetupAxesLimits(mu_min, mu_max + 0.05, -5, 1);
 	
-	ImPlot::PlotScatter("Data 1", mus1, xs, number);
-	//ImPlot::PlotLine("Data 2", mus2, exps, mu_step);
+	double HorizontalAxisLabelPositions[9] = { 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4 };
+	//const char* HorizontalAxisLabels[7] = { "3.5", "3.6", "3.7", "3.8", "3.9", "4" };
+	double VerticalAxisLabelPositions[12] = {-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1};
+	//const char* VerticalAxisLabels[6] = { "0", "0.2", "0.4", "0.6", "0.8", "1" };
+	ImPlot::SetupAxisTicks(ImAxis_X1, HorizontalAxisLabelPositions, 9); // , HorizontalAxisLabels);
+	ImPlot::SetupAxisTicks(ImAxis_Y1, VerticalAxisLabelPositions, 12); // , VerticalAxisLabels);
+	
+	//ImPlot::PlotScatter("Data 1", mus1, xs, number);
+	ImPlot::PlotLine("Data 2", mus2, exps, mu_step);
+	ImPlot::PlotLine("##", mus2, 0, mu_step);
 	ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
 	ImPlot::PopStyleVar();
 }

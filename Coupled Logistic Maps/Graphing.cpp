@@ -329,8 +329,8 @@ LRESULT CALLBACK DummyWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 // Save the plot to a file instead of rendering to screen
 bool GraphToFile(void (*func)(float*, float*, float), float* mus, float* xs, float number, const char* filename) 
 {
-    const UINT width = 4096;
-    const UINT height = 4096;
+    const UINT width = 8192;
+    const UINT height = 8192;
 
     //Pick a valid hardware adapter
     IDXGIFactory5* factory = nullptr;
@@ -346,6 +346,11 @@ bool GraphToFile(void (*func)(float*, float*, float), float* mus, float* xs, flo
         adapter->Release();
     }
 
+    ID3D12Debug* debugController = nullptr;
+    if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)))) {
+        debugController->EnableDebugLayer();
+        debugController->Release();
+    }
     ID3D12Device* device = nullptr;
     if (FAILED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device)))) return false;
 
@@ -411,7 +416,7 @@ bool GraphToFile(void (*func)(float*, float*, float), float* mus, float* xs, flo
     D3D12_RESOURCE_DESC readbackDesc = {};
     readbackDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
     readbackDesc.Alignment = 0;
-    readbackDesc.Width = static_cast<UINT64>(width) * height * 4; // 4 bytes per pixel
+    readbackDesc.Width = static_cast<UINT64>(width) * height * 4;
     readbackDesc.Height = 1;
     readbackDesc.DepthOrArraySize = 1;
     readbackDesc.MipLevels = 1;
@@ -448,7 +453,7 @@ if (FAILED(hr) || readbackBuffer == nullptr) {
     ImGui::SetCurrentContext(ctx);
     ImPlot::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
-    io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/arial.ttf", 48.0f);
+    io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/arial.ttf", 144.0f);
     io.DisplaySize = ImVec2((float)width, (float)height);
 
     ImGui_ImplDX12_InitInfo init_info = {};
@@ -486,7 +491,7 @@ if (FAILED(hr) || readbackBuffer == nullptr) {
         ImGuiWindowFlags_NoMove |
         ImGuiWindowFlags_NoBringToFrontOnFocus);
 
-    if (ImPlot::BeginPlot("Plot", ImVec2((float)width, (float)height))) {
+    if (ImPlot::BeginPlot("##", ImVec2((float)width, (float)height), ImPlotFlags_NoLegend)) {
         func(mus, xs, number);
         ImPlot::EndPlot();
     }
@@ -529,6 +534,8 @@ if (FAILED(hr) || readbackBuffer == nullptr) {
     ID3D12Fence* fence = nullptr;
     if (FAILED(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)))) {
         std::cerr << "Failed to create fence!\n";
+        HRESULT reason = device->GetDeviceRemovedReason();
+        std::cerr << "Device removed reason: " << std::hex << reason << "\n";
         return false;
     }
 

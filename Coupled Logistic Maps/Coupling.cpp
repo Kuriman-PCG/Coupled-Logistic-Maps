@@ -4,11 +4,20 @@
 #include "implot.h"
 #include "Graphing.h"
 #include <vector>
-#include <chrono>
-#include <thread>
 #include <random>
+#include <thread>
+#include <chrono>
+#include <math.h>
 
 using namespace std;
+
+
+float og_step(float x_n, float mu)
+{
+	float x_n1 = mu * x_n * (1 - x_n);
+	return(x_n1);
+}
+
 
 float* step(float x_n, float y_n, float z_n, float a, float b, float c, float d) {
 	float x_n1 = a * x_n * (1 - x_n) - c * x_n + c * 0.5f * y_n;
@@ -415,135 +424,98 @@ bool asearch(vector<float> a, float b) {
 // mu
 float amu_min = 0;
 float amu_max = 4;
-int const amu_step = 1000;
+int const amu_step = 5000;
 
-//starting values
-float ax_0 = 0.3;
-float ay_0 = 0.4;
-//float alpha = 0.1;
+//starting value of x
+float ax_0 = 0.5;
+float ay_0 = 0.5;
 
 //resolution
-int const ano_of_steps = 5400;
-int const acutoff = 3400;
+int const no_of_steps = 5000;
+int const cutoff = 1000;
 
 //number of total points
-int const anumber = (amu_step + 1) * (ano_of_steps - acutoff - 1);
+int const anumber = (amu_step + 1) * (no_of_steps - cutoff - 1);
 
-float og_step(float r, float x) {
-	return r * x * (1 - x);
-}
 
-void coupledlogfunc(float* axs, float* ays, float a) {
+void couplogfunc(float* xs, float* exps, float a) {
 
-	static float xs[anumber], ys[anumber];
-
-	static float alpha = 0;
-
-	static float mus1[anumber], mus2[amu_step], exps[amu_step];
+	static float mus1[anumber], mus2[amu_step];
 	int mudummy1 = 0;
 	int mudummy2 = 0;
 	for (float mu = amu_min; mu <= amu_max; mu += ((amu_max - amu_min) / (float)amu_step)) {
 		mus2[mudummy2++] = mu;
-		for (int t = 0; t < ano_of_steps; t++)
-			if (t > acutoff)
+		for (int t = 0; t < no_of_steps; t++)
+			if (t > cutoff)
 				mus1[mudummy1++] = mu;
 	}
 
+	//setting up style for the plot
+	ImGui::StyleColorsLight();
+	ImPlot::StyleColorsLight();
+	ImPlotStyle& style = ImPlot::GetStyle();
+	style.PlotBorderSize = 1;
+	style.LineWeight = 1.5f;
+	style.MarkerSize = 4;
+	ImVec4 black = ImVec4(0.25, 0.25, 0.25, 0.75);
+	ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 2, black, 0.0f, black);
+	ImPlot::SetupAxes("r", "x");
+	ImPlot::SetupAxesLimits(amu_min, amu_max + 0.05, -0.05, 1.05);
+	//ImPlot::SetupAxesLimits(amu_min, amu_max + 0.05, -5, 1);
 
-	static float cratios[1] = { 1.0f };
-	static float rratios[2] = { 1.0f ,1.0f };
-	static ImPlotSubplotFlags flagsa = ImPlotSubplotFlags_LinkAllX;
+	double HorizontalAxisLabelPositions[9] = { 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4 };
+	//const char* HorizontalAxisLabels[7] = { "3.5", "3.6", "3.7", "3.8", "3.9", "4" };
+	double VerticalAxisLabelPositions[6] = { 0, 0.2, 0.4, 0.6, 0.8, 1};
+	//const char* VerticalAxisLabels[6] = { "0", "0.2", "0.4", "0.6", "0.8", "1" };
+	ImPlot::SetupAxisTicks(ImAxis_X1, HorizontalAxisLabelPositions, 9); // , HorizontalAxisLabels);
+	ImPlot::SetupAxisTicks(ImAxis_Y1, VerticalAxisLabelPositions, 6); // , VerticalAxisLabels);
 
-	float upper_envelope_r[101] = { 0 };
-	float upper_envelope_x[101] = { 0 };
-	for (int i = 0; i < 101; i++) {
-		upper_envelope_r[i] = i / 25.0f;
-		upper_envelope_x[i] = (1.0f / (4.0f - 2.0f * alpha)) * upper_envelope_r[i];
-	}
-
-	float lower_envelope_r[101] = { 0 };
-	float lower_envelope_x[101] = { 0 };
-	for (int i = 0; i < 101; i++) {
-		lower_envelope_r[i] = i / 25.0f;
-		lower_envelope_x[i] = (og_step(upper_envelope_r[i], upper_envelope_x[i]) - alpha * (upper_envelope_x[i] - og_step(upper_envelope_r[i], upper_envelope_x[i]) - alpha * upper_envelope_x[i])) / (1 + pow(alpha,2));
-	}
-
-	if(ImPlot::BeginSubplots("My Subplots", 2, 1, ImVec2(-1, -60), flagsa, rratios, cratios)) {
-		if (ImPlot::BeginPlot("Pop 1", ImVec2(/*-1, -30*/))) {
-			ImPlot::SetupAxes("x", "r");
-			ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.0f, ImVec4(0, 0, 1, 1), 1.0f, ImVec4(0, 0, 0, 0));
-			ImPlot::PlotScatter("Data 1", mus1, xs, anumber);
-			ImPlot::PlotLine("Upper Envelope", upper_envelope_r, upper_envelope_x, 101);
-			ImPlot::PlotLine("Lower Envelope", lower_envelope_r, lower_envelope_x, 101);
-			ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
-			ImPlot::PopStyleVar();
-			ImPlot::EndPlot();
-		}
-		/* this produces a second bifurcation diagram for y, but they are always identical so it has been removed for performance reasons*/
-		if (ImPlot::BeginPlot("Pop 2", ImVec2())) {
-
-			ImPlot::SetupAxes("y", "s");
-			ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.0f, ImVec4(1, 0, 0, 1), 1.0f, ImVec4(0, 0, 0, 0));
-			ImPlot::PlotScatter("Data 2", mus2, exps, amu_step);
-			ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
-			ImPlot::PopStyleVar();
-			ImPlot::EndPlot();
-		} 
-		ImPlot::EndSubplots();
-	}
-	ImGui::SetNextItemWidth(150.0f);
-	ImGui::InputFloat("##Alpha", &alpha);
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(150.0f);
-	ImGui::InputFloat("##x0", &ax_0);
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(150.0f);
-	ImGui::InputFloat("##y0", &ay_0);
-	ImGui::SameLine();
-	if (ImGui::Button("Alpha")) {
-		
-		int mudummy = 0;
-		int expdummy = 0;
-		for (float mu = amu_min; mu <= amu_max; mu += ((amu_max - amu_min) / (float)amu_step)) {
-			// simulating the network
-			vector<float> blacklistx = { 0 };
-			vector<float> blacklisty = { 0 };
-			float x[ano_of_steps + 1] = {};
-			float y[ano_of_steps + 1] = {};
-			x[0] = ax_0;
-			y[0] = ay_0;
-			float exp = 0.0f;
-			exp = 0.0f;
-			for (int t = 0; t < ano_of_steps; t++)
-			{
-				//std::cout << "x[" << t << "] = " << x[t] << ", mu = " << mu << std::endl;
-				float* output = step2(x[t], y[t], mu, mu, alpha, alpha);
-				x[t + 1] = output[0];
-				y[t + 1] = output[1];
-
-				if (t > acutoff /* && !asearch(blacklist, x[t])*/) {
-					xs[mudummy] = x[t];
-					ys[mudummy] = y[t];
-					mudummy++;
-					blacklistx.push_back(atruncate(x[t]));
-					blacklisty.push_back(atruncate(x[t]));
-					exp += log(abs(mu * (1.0f - (2.0f * x[t])) - alpha)); //for alpha system
-					// exp += log(abs((mu * (1.0f - (2.0f * x[t]))))); // for epsilon system
-				}
-			}
-			exps[expdummy++] = exp / (float)(ano_of_steps - acutoff);
-		}
-	}
+	ImPlot::PlotScatter("Data 1", mus1, xs, anumber);
+	//ImPlot::PlotLine("Data 2", mus2, exps, amu_step);
+	ImPlot::PlotLine("##", mus2, 0, amu_step);
+	ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
+	ImPlot::PopStyleVar();
 }
 
 void coupledlogistic() {
-	static float axs[1], ays[1];
 
-	Graph(coupledlogfunc, axs, ays, -3.0f);
+	static float xs[anumber], ys[anumber], exps[amu_step];
+
+	int mudummy = 0;
+	int expdummy = 0;
+	float alpha = 0.1;
+	for (float mu = amu_min; mu <= amu_max; mu += ((amu_max - amu_min) / (float)amu_step)) {
+		// simulating the network
+		vector<float> blacklist = { 0 };
+		float x[no_of_steps + 1] = {};
+		float y[no_of_steps + 1] = {};
+		x[0] = ax_0;
+		y[0] = ay_0;
+		float exp = 0.0f;
+		exp = 0.0f;
+		for (int t = 0; t < no_of_steps; t++)
+		{
+			//std::cout << "x[" << t << "] = " << x[t] << ", mu = " << mu << std::endl;
+			float* state = step2(x[t], y[t], mu, mu, alpha, alpha);
+			x[t + 1] = state[0];
+			y[t + 1] = state[1];
+
+			if (t > cutoff /* && !search(blacklist, x[t])*/) {
+				xs[mudummy] = x[t];
+				mudummy++;
+				blacklist.push_back(atruncate(x[t]));
+				exp += log(abs(mu * (1.0f - (2.0f * x[t]))));
+			}
+		}
+		exps[expdummy++] = exp / (float)(no_of_steps - cutoff);
+	}
+
+
+	GraphToFile(couplogfunc, xs, exps, anumber, "plot.png");
 }
 
-float bx_0 = 0.1;
-float by_0 = 0.5;
+float bx_0 = 0.8;
+float by_0 = 0.9;
 
 int const bno_of_steps = 125000;	// Ideally, this variable could be increased, but doing so causes a stack overflow. The exact value that causes this is inconsistent :/
 int const bcutoff = 5000;
