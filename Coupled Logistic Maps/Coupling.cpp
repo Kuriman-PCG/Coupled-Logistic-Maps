@@ -1,4 +1,4 @@
-
+﻿
 #include <iostream>
 #include <stdio.h>
 #include "implot.h"
@@ -427,7 +427,7 @@ float amu_max = 4;
 int const amu_step = 5000;
 
 //starting value of x
-float ax_0 = 0.5;
+float ax_0 = 0.2;
 float ay_0 = 0.5;
 
 //resolution
@@ -459,22 +459,29 @@ void couplogfunc(float* xs, float* exps, float a) {
 	style.MarkerSize = 4;
 	ImVec4 black = ImVec4(0.25, 0.25, 0.25, 0.75);
 	ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 2, black, 0.0f, black);
-	ImPlot::SetupAxes("r", "x");
-	ImPlot::SetupAxesLimits(amu_min, amu_max + 0.05, -0.05, 1.05);
+	ImPlot::SetupAxes("r", "λ"); //λ
+	ImPlot::SetupAxesLimits(amu_min, amu_max + 0.05, -5.1, 1.1);
 	//ImPlot::SetupAxesLimits(amu_min, amu_max + 0.05, -5, 1);
 
 	double HorizontalAxisLabelPositions[9] = { 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4 };
 	//const char* HorizontalAxisLabels[7] = { "3.5", "3.6", "3.7", "3.8", "3.9", "4" };
-	double VerticalAxisLabelPositions[6] = { 0, 0.2, 0.4, 0.6, 0.8, 1};
+	double VerticalAxisLabelPositions[7] = {-5, -4, -3, -3, -1, 0, 1};
 	//const char* VerticalAxisLabels[6] = { "0", "0.2", "0.4", "0.6", "0.8", "1" };
 	ImPlot::SetupAxisTicks(ImAxis_X1, HorizontalAxisLabelPositions, 9); // , HorizontalAxisLabels);
-	ImPlot::SetupAxisTicks(ImAxis_Y1, VerticalAxisLabelPositions, 6); // , VerticalAxisLabels);
+	ImPlot::SetupAxisTicks(ImAxis_Y1, VerticalAxisLabelPositions, 7); // , VerticalAxisLabels);
 
-	ImPlot::PlotScatter("Data 1", mus1, xs, anumber);
-	//ImPlot::PlotLine("Data 2", mus2, exps, amu_step);
+	//ImPlot::PlotScatter("Data 1", mus1, xs, anumber);
+	ImPlot::PlotLine("Data 2", mus2, exps, amu_step);
 	ImPlot::PlotLine("##", mus2, 0, amu_step);
 	ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
 	ImPlot::PopStyleVar();
+
+	/* line for x-axis */
+	float zeros[amu_step] = { 0 };
+	ImPlot::PushStyleVar(ImPlotStyleVar_LineWeight, 3.0f);
+	ImPlot::PushStyleColor(ImPlotCol_Line, black);
+	ImPlot::PlotLine("Data 1", mus2, zeros, amu_step);
+
 }
 
 void coupledlogistic() {
@@ -504,7 +511,7 @@ void coupledlogistic() {
 				xs[mudummy] = x[t];
 				mudummy++;
 				blacklist.push_back(atruncate(x[t]));
-				exp += log(abs(mu * (1.0f - (2.0f * x[t]))));
+				exp += log(abs( (mu * (1 - 2 * x[t]) - alpha) * (mu * (1 - 2 * y[t]) - alpha) - pow(alpha,2) ));
 			}
 		}
 		exps[expdummy++] = exp / (float)(no_of_steps - cutoff);
@@ -514,66 +521,76 @@ void coupledlogistic() {
 	GraphToFile(couplogfunc, xs, exps, anumber, "plot.png");
 }
 
-float bx_0 = 0.8;
-float by_0 = 0.9;
+/* initialising variables */
 
-int const bno_of_steps = 125000;	// Ideally, this variable could be increased, but doing so causes a stack overflow. The exact value that causes this is inconsistent :/
+// mu
+float bmu_min = 0;
+float bmu_max = 4;
+
+//starting value of x
+float bx_0 = 0.2;
+float by_0 = 0.5;
+
+//resolution
+int const bno_of_steps = 50000;
 int const bcutoff = 5000;
 
+//number of total points
 int const bnumber = bno_of_steps - bcutoff;
 
-void phasefunc(float* bxs, float* bys, float b) {
 
-	static float xs[bnumber], ys[bnumber];
+void phasefunc(float* xs, float* ys, float a) {
 
-	static float r = 3.7;
-	static float s = 3.7;
-	static float alpha = 0.1;
-	static bool rsequal = true;
+	//setting up style for the plot
+	ImGui::StyleColorsLight();
+	ImPlot::StyleColorsLight();
+	ImPlotStyle& style = ImPlot::GetStyle();
+	style.PlotBorderSize = 1;
+	style.LineWeight = 1.5f;
+	style.MarkerSize = 4;
+	ImVec4 black = ImVec4(0.25, 0.25, 0.25, 0.75);
+	ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 30, black, 0.0f, black);
+	ImPlot::SetupAxes("x", "y"); //λ
+	ImPlot::SetupAxesLimits(-0.05, 1.05, -0.05, 1.05);
 
+	double HorizontalAxisLabelPositions[15] = { 0, 0.2, 0.4, 0.6, 0.8, 1};
+	double VerticalAxisLabelPositions[15] = { 0, 0.2, 0.4, 0.6, 0.8, 1 };
+	ImPlot::SetupAxisTicks(ImAxis_X1, HorizontalAxisLabelPositions, 15);
+	ImPlot::SetupAxisTicks(ImAxis_Y1, VerticalAxisLabelPositions, 15);
 
-	if (ImPlot::BeginPlot("Pop 1", ImVec2(-1,-90))) {
-			ImPlot::SetupAxes("x", "y");
-			ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.0f, ImVec4(1, 0.4, 0, 1), 1.0f, ImVec4(0, 0, 0, 0));
-			ImPlot::PlotScatter("Data 1", xs, ys, bnumber);
-			ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
-			ImPlot::PopStyleVar();
-			ImPlot::EndPlot();
-	}
+	ImPlot::PlotScatter("Data 1", xs, ys, bnumber);
+	ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
+	ImPlot::PopStyleVar();
 
-	//if (ImGui::Button("Alpha") || ImGui::Button("r") || ImGui::Button("s")) {
-	int mudummy = 0;
-		// simulating the network
-		float x[bno_of_steps + 1] = {};
-		float y[bno_of_steps + 1] = {};
-		x[0] = bx_0;
-		y[0] = by_0;
-		for (int t = 0; t < bno_of_steps; t++)
-		{
-			//std::cout << t << std::endl;
-			//std::cout << "x[" << t << "] = " << x[t] << ", mu = " << mu << std::endl;
-			float* output = step2(x[t], y[t], r, rsequal ? r : s, alpha, alpha);
-			x[t + 1] = output[0];
-			y[t + 1] = output[1];
-
-			if (t >= bcutoff) {
-				xs[mudummy] = x[t];
-				ys[mudummy] = y[t];
-				mudummy++;
-			}
-		}
-	//}
-	ImGui::SliderFloat("Alpha", &alpha, 0, 1, "%.3f");
-	ImGui::SliderFloat("r", &r, 0, 4, "%.3f");
-	if (rsequal == false) ImGui::SliderFloat("s", &s, 0, 4, "%.3f");
-	ImGui::Checkbox("Lock r to s", &rsequal);
-
+	//for (int i = 0; i < bnumber; i++) std::cout << "(" << xs[i] << ", " << ys[i] << ")" << endl;
+	for (int i = 0; i < bnumber; i++) if (xs[i] == 0) std::cout << i;
 }
 
 void phasediagram() {
-	static float axs[1], ays[1];
 
-	Graph(phasefunc, axs, ays, -3.0f);
+	static float xs[bnumber], ys[bnumber];
+	
+	float alpha = 0.1;
+	float mu = 3.2;
+
+	// simulating the network12
+
+	float x[bno_of_steps + 1] = {};
+	float y[bno_of_steps + 1] = {};
+	x[0] = bx_0;
+	y[0] = by_0;
+	for (int t = 0; t < bno_of_steps; t++)
+	{
+		float* state = step2(x[t], y[t], mu, mu, alpha, alpha);
+		x[t + 1] = state[0];
+		y[t + 1] = state[1];
+
+		if (t >= bcutoff) {
+			xs[t - bcutoff] = x[t];
+			ys[t - bcutoff] = y[t];
+		}
+	}
+	GraphToFile(phasefunc, xs, ys, bnumber, "plot.png");
 }
 
 /* initialising variables */

@@ -1,4 +1,4 @@
-// Coupled Logistic Maps.cpp : This file contains the 'main' function. Program execution begins and ends there.
+﻿// Coupled Logistic Maps.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
 #include <iostream>
@@ -10,6 +10,7 @@
 #include <thread>
 #include <chrono>
 #include <math.h>
+#include "imgui_impl_dx12.h"
 
 using namespace std;
 
@@ -77,7 +78,7 @@ bool search(vector<float> a, float b) {
 /* initialising variables */
 
 // mu
-float mu_min = 0;
+float mu_min = 2;
 float mu_max = 4;
 int const mu_step = 5000;
 
@@ -94,10 +95,11 @@ int const number = (mu_step + 1) * (no_of_steps - cutoff - 1);
 
 void logfunc(float* xs, float* exps, float a) {
 
-	static float mus1[number], mus2[mu_step];
+	static float mus1[number], mus2[mu_step] = { 0 };
 	int mudummy1 = 0;
 	int mudummy2 = 0;
-	for (float mu = mu_min; mu <= mu_max; mu += ((mu_max - mu_min) / (float)mu_step)) {
+	for (int i = 0; i < mu_step; i++) {
+		float mu = mu_min + i * (mu_max - mu_min) / (mu_step - 1);
 		mus2[mudummy2++] = mu;
 		for (int t = 0; t < no_of_steps; t++) 
 			if (t > cutoff) 
@@ -112,21 +114,41 @@ void logfunc(float* xs, float* exps, float a) {
 	style.LineWeight = 1.5f;
 	style.MarkerSize = 4;
 	ImVec4 black = ImVec4(0.25, 0.25, 0.25, 0.75);
-	ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 2, black, 0.0f, black);
+	ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 2, ImVec4(0.25, 0.25, 0.5, 0.1), 0.0f, ImVec4(0, 0, 0, 0));
 	ImPlot::SetupAxes("r", "x");
 	//ImPlot::SetupAxesLimits(mu_min, mu_max + 0.05, -0.05, 1.05);
-	ImPlot::SetupAxesLimits(mu_min, mu_max + 0.05, -5, 1);
+	ImPlot::SetupAxesLimits(mu_min, mu_max + 0.05, -0.05, 1.05);
 	
-	double HorizontalAxisLabelPositions[9] = { 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4 };
-	//const char* HorizontalAxisLabels[7] = { "3.5", "3.6", "3.7", "3.8", "3.9", "4" };
-	double VerticalAxisLabelPositions[12] = {-10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1};
-	//const char* VerticalAxisLabels[6] = { "0", "0.2", "0.4", "0.6", "0.8", "1" };
-	ImPlot::SetupAxisTicks(ImAxis_X1, HorizontalAxisLabelPositions, 9); // , HorizontalAxisLabels);
-	ImPlot::SetupAxisTicks(ImAxis_Y1, VerticalAxisLabelPositions, 12); // , VerticalAxisLabels);
+	double HorizontalAxisLabelPositions[5] = {2, 2.5, 3, 3.5, 4 };
+	double VerticalAxisLabelPositions[6] = {0, 0.2, 0.4, 0.6, 0.8, 1};
+	ImPlot::SetupAxisTicks(ImAxis_X1, HorizontalAxisLabelPositions, 5);
+	ImPlot::SetupAxisTicks(ImAxis_Y1, VerticalAxisLabelPositions, 6);
+	//ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2(10, 10));
+	//ImPlot::PushStyleVar(ImPlotStyleVar_LabelPadding, ImVec2(10, 10));
 	
-	//ImPlot::PlotScatter("Data 1", mus1, xs, number);
-	ImPlot::PlotLine("Data 2", mus2, exps, mu_step);
-	ImPlot::PlotLine("##", mus2, 0, mu_step);
+	ImPlot::PlotScatter("Data 1", mus1, xs, number);
+	//ImPlot::PlotLine("Data 2", mus2, exps, mu_step);
+	
+	/* envelope */
+	float upper_envelope[mu_step], lower_envelope[mu_step] = {0};
+	for (int i = 0; i < mu_step; i++) {
+		float r = mu_min + i * (mu_max - mu_min) / (mu_step - 1);
+		upper_envelope[i] = r / 4;
+		lower_envelope[i] = step(upper_envelope[i], r);
+	}
+	ImPlot::PushStyleVar(ImPlotStyleVar_LineWeight, 5.0f);
+	ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0, 0, 0, 1));
+	ImPlot::PlotLine("Upper Envelope", mus2, upper_envelope, mu_step);
+	ImPlot::PlotLine("Lower Envelope", mus2, lower_envelope, mu_step);
+
+	
+	/* line for x-axis 
+	float zeros[mu_step] = { 0 };
+	ImPlot::PushStyleVar(ImPlotStyleVar_LineWeight, 3.0f);
+	ImPlot::PushStyleColor(ImPlotCol_Line, black);
+	ImPlot::PlotLine("Data 1", mus2, zeros, mu_step);
+	*/
+
 	ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
 	ImPlot::PopStyleVar();
 }
@@ -137,7 +159,8 @@ void logistic() {
 
 	int mudummy = 0;
 	int expdummy = 0;
-	for (float mu = mu_min; mu <= mu_max; mu += ((mu_max - mu_min) / (float) mu_step)) {
+	for (int i = 0; i < mu_step; i++) {
+		float mu = mu_min + i * (mu_max - mu_min) / (mu_step - 1);
 		// simulating the network
 		vector<float> blacklist = { 0 };
 		float x[no_of_steps + 1] = {};
@@ -158,8 +181,6 @@ void logistic() {
 		}
 		exps[expdummy++] = exp / (float)(no_of_steps - cutoff);
 	}
-
-	
 	GraphToFile(logfunc, xs, exps, number, "plot.png");
 }
 
