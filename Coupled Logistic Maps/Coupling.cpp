@@ -450,6 +450,15 @@ void couplogfunc(float* xs, float* exps, float a) {
 				mus1[mudummy1++] = mu;
 	}
 
+	// find when chaos emerges
+	bool CheckForChaos = true;
+	for (int i = 1; i < no_of_steps; i++) {
+		if (CheckForChaos && exps[i] > 0) {
+			std::cout << "Lyapunov exponent > 0 first occurs at r = " << amu_min + i * ((amu_max - amu_min) / amu_step) << endl;
+			CheckForChaos = false;
+		}
+	}
+
 	//setting up style for the plot
 	ImGui::StyleColorsLight();
 	ImPlot::StyleColorsLight();
@@ -481,7 +490,6 @@ void couplogfunc(float* xs, float* exps, float a) {
 	ImPlot::PushStyleVar(ImPlotStyleVar_LineWeight, 3.0f);
 	ImPlot::PushStyleColor(ImPlotCol_Line, black);
 	ImPlot::PlotLine("Data 1", mus2, zeros, amu_step);
-
 }
 
 void coupledlogistic() {

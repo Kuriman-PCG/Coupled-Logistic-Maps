@@ -85,17 +85,55 @@ void criticalvalues() {
 	double alphastart = 0;
 	double alphachange = 0.02;
 	double alphamax = 0.3;
-	int cycles = 2;
+	//int cycles = 2;
 
 	ofstream MyFile("data.csv");
-	MyFile << "cycles,alpha,result" << endl;
+	MyFile << "alpha,r_max,r_infinity" << endl;
 
+	//finding r_max
+	int const no_of_steps = 1000;
+	float x_0 = 0.1;
+	float y_0 = 0.5;
+	float xs[no_of_steps + 1] = { x_0 };
+	float ys[no_of_steps + 1] = { y_0 };
+	// per alpha
+	for (int i = 0; i < 1001; i++) {
+		float alpha = i / static_cast<float>(1000);
+		float r_max = 0;
+		float r_infinity = 0;
+		bool CheckForChaos = true;
+		// per r
+		for (int j = 0; j < 4001; j++) {
+			float r = j / static_cast<float>(1000);
+			float exp = 0.0f;
+			// per n
+			for (int k = 0; k < no_of_steps; k++) {
+				double* state = step(r, xs[k], ys[k], alpha);
+				xs[k + 1] = state[0];
+				ys[k + 1] = state[1];
+				exp += log(abs((r * (1 - 2 * xs[k]) - alpha) * (r * (1 - 2 * ys[k]) - alpha) - pow(alpha, 2)));
+			}
+			exp = exp / no_of_steps;
+			if (!isinf(xs[no_of_steps]) && !isnan(xs[no_of_steps])) r_max = r;
+			if (CheckForChaos && exp > 0) {
+				r_infinity = r;
+				CheckForChaos = false;
+				//std::cout << "(" << alpha << ", " << r << ", " << exp << ")" << endl;
+			}
+			//std::cout << r;
+		}
+		MyFile << alpha << "," << r_max << "," << r_infinity << endl;
+	}
+
+
+	/*
 	for (int cycles = 2; cycles < 33; cycles *= 2) {
 		for (double alpha = alphastart; alpha <= alphamax; alpha += alphachange) {
 			double result = cvalue(alpha, cycles, 2.9 - (3 * alpha));
 			MyFile << cycles << "," << alpha << "," << setprecision(15) << result << endl;
 		}
 	}
+	*/
 
 	MyFile.close();
 }
