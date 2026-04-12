@@ -458,14 +458,16 @@ void coupledlogfunc(float* axs, float* ays, float a) {
 	float upper_envelope_x[101] = { 0 };
 	for (int i = 0; i < 101; i++) {
 		upper_envelope_r[i] = i / 25.0f;
-		upper_envelope_x[i] = (1.0f / (4.0f - 2.0f * alpha)) * upper_envelope_r[i];
+		//upper_envelope_x[i] = (1.0f / (4.0f - 2.0f * alpha)) * upper_envelope_r[i];
+		upper_envelope_x[i] = ((upper_envelope_r[i] - alpha) / (2 * upper_envelope_r[i] * (1 - alpha))) * (upper_envelope_r[i] * (1 - (upper_envelope_r[i] - alpha) / (2 * upper_envelope_r[i])) - alpha);
 	}
 
 	float lower_envelope_r[101] = { 0 };
 	float lower_envelope_x[101] = { 0 };
 	for (int i = 0; i < 101; i++) {
 		lower_envelope_r[i] = i / 25.0f;
-		lower_envelope_x[i] = (og_step(upper_envelope_r[i], upper_envelope_x[i]) - alpha * (upper_envelope_x[i] - og_step(upper_envelope_r[i], upper_envelope_x[i]) - alpha * upper_envelope_x[i])) / (1 + pow(alpha,2));
+		//lower_envelope_x[i] = (og_step(upper_envelope_r[i], upper_envelope_x[i]) - alpha * (upper_envelope_x[i] - og_step(upper_envelope_r[i], upper_envelope_x[i]) - alpha * upper_envelope_x[i])) / (1 + pow(alpha,2));
+		lower_envelope_x[i] = (og_step(upper_envelope_r[i], upper_envelope_x[i]) - alpha * upper_envelope_x[i]) / (1 - alpha);
 	}
 
 	if(ImPlot::BeginSubplots("My Subplots", 2, 1, ImVec2(-1, -60), flagsa, rratios, cratios)) {
