@@ -92,39 +92,65 @@ void criticalvalues() {
 
 	//finding r_max
 	int const no_of_steps = 1000;
-	float x_0 = 0.1;
-	float y_0 = 0.5;
-	float xs[no_of_steps + 1] = { x_0 };
-	float ys[no_of_steps + 1] = { y_0 };
+	double x_0 = 0.1;
+	double y_0 = 0.5;
+	double xinf, yinf;
+	//float xs[no_of_steps + 1] = { x_0 };
+	//float ys[no_of_steps + 1] = { y_0 };
+	double new_x, new_y, x, y = 0;
+
 	// per alpha
-	for (int i = 0; i < 1001; i++) {
-		float alpha = i / static_cast<float>(1000);
-		float r_max = 0;
-		float r_infinity = 0;
-		bool CheckForChaos = true;
-		// per r
-		for (int j = 0; j < 4001; j++) {
-			float r = j / static_cast<float>(1000);
-			float exp = 0.0f;
-			// per n
-			for (int k = 0; k < no_of_steps; k++) {
-				double* state = step(r, xs[k], ys[k], alpha);
-				xs[k + 1] = state[0];
-				ys[k + 1] = state[1];
-				exp += log(abs((r * (1 - 2 * xs[k]) - alpha) * (r * (1 - 2 * ys[k]) - alpha) - pow(alpha, 2)));
+	for (int i = 0; i <= 50; i++) {
+		double alpha = i / static_cast<double>(100);
+		double r_infinity = 4;
+		double r_max = 4;
+		//per x_0
+		for (int xi = 1; xi <= 50; xi++) {
+			x_0 = xi / 100.0f;
+			//per y_0
+			for (int yi = 1; yi <= 50; yi++) {
+				y_0 = yi / 100.0f;
+				if (x_0 <= y_0) {break;} // system is symmetrical, so don't need (x_0,y_0) if (y_0,x_0) has already been computed
+				else {
+					double r_max_dummy = 4;
+					double r_infinity_dummy = 4;
+					bool CheckForChaos = true;
+					// per r
+					for (int j = 0; j <= 4000; j++) {
+						double r = j / static_cast<double>(1000);
+						x = x_0;
+						y = y_0;
+						double exp = 0.0f;
+						// per n
+						for (int k = 0; k < no_of_steps; k++) {
+							new_x = r * x * (1 - x) - alpha * (x - y);
+							new_y = r * y * (1 - y) + alpha * (x - y);
+							x = new_x;
+							y = new_y;
+
+							if (k > 20) exp += log(fabs((r * (1 - 2 * new_x) - alpha) * (r * (1 - 2 * new_y) - alpha) - alpha * alpha));
+						}
+						exp = exp / no_of_steps;
+						//std::cout << "(" << r << ", " << alpha << ", " << exp << ")" << endl;
+						if (CheckForChaos && exp > 0) {
+							r_infinity_dummy = r;
+							//xinf = x_0;
+							//yinf = y_0;
+							CheckForChaos = false;
+						}
+						if (!isinf(x) && !isnan(x)) { r_max_dummy = r; }
+						else break;
+					}
+					r_max = min(r_max, r_max_dummy);
+					r_infinity = min(r_infinity, r_infinity_dummy);
+				}
 			}
-			exp = exp / no_of_steps;
-			if (!isinf(xs[no_of_steps]) && !isnan(xs[no_of_steps])) r_max = r;
-			if (CheckForChaos && exp > 0) {
-				r_infinity = r;
-				CheckForChaos = false;
-				//std::cout << "(" << alpha << ", " << r << ", " << exp << ")" << endl;
-			}
-			//std::cout << r;
 		}
 		MyFile << alpha << "," << r_max << "," << r_infinity << endl;
+		std::cout << alpha << endl;
 	}
-
+	// NOTE: iterating through all values of (x,y) in the range 0 < x,y < 1 is not suitable because we could be starting at, e.g. (0.99, 0.99), which will almost certainly be a state from which chaos can emerge. The decision has been made to cap x_0 and y_0 at 0.5. Hopefully this is good enough
+	// It's telling that if we record the inital values for which r_infinity occurs, we often get maximal values, although this could be due to floating point imprecision in the min() function overwriting the same value over and over again
 
 	/*
 	for (int cycles = 2; cycles < 33; cycles *= 2) {
