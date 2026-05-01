@@ -27,14 +27,14 @@ float* step(float x_n, float y_n, float z_n, float a, float b, float c, float d)
 	return xyz;
 }
 
-float* step2(float x_n, float y_n, float a, float b, float c, float d) {
+float* step3(float x_n, float y_n, float a, float b, float c, float d) {
 	float x_n1 = a * x_n * (1 - x_n) - c * x_n + d * y_n;
 	float y_n1 = b * y_n * (1 - y_n) - d * y_n + c * x_n;
 	float xy[2] = { x_n1, y_n1 };
 	return xy;
 }
 
-float* step3(float x_n, float y_n, float a, float b, float c, float d) {
+float* step2(float x_n, float y_n, float a, float b, float c, float d) {
 	float x_n1 = (1-c) * a * x_n * (1 - x_n) + d * b * y_n * (1 - y_n);
 	float y_n1 = (1-d) * b * y_n * (1 - y_n) + c * a * x_n * (1 - x_n);
 	float xy[2] = { x_n1, y_n1 };
@@ -422,13 +422,16 @@ bool asearch(vector<float> a, float b) {
 /* initialising variables */
 
 // mu
-float amu_min = 0;
+float amu_min = 2;
 float amu_max = 4;
 int const amu_step = 5000;
 
 //starting value of x
-float ax_0 = 0.2;
-float ay_0 = 0.5;
+float ax_0 = 0.1;
+float ay_0 = 0.9;
+
+// alpha
+float alpha = 0.05;
 
 //resolution
 int const no_of_steps = 5000;
@@ -439,6 +442,7 @@ int const anumber = (amu_step + 1) * (no_of_steps - cutoff - 1);
 
 
 void couplogfunc(float* xs, float* exps, float a) {
+
 
 	static float mus1[anumber], mus2[amu_step];
 	int mudummy1 = 0;
@@ -463,33 +467,48 @@ void couplogfunc(float* xs, float* exps, float a) {
 	ImGui::StyleColorsLight();
 	ImPlot::StyleColorsLight();
 	ImPlotStyle& style = ImPlot::GetStyle();
+	style.MajorGridSize = ImVec2(5.0f, 5.0f);
+	style.MinorGridSize = ImVec2(5.0f, 5.0f);
 	style.PlotBorderSize = 1;
 	style.LineWeight = 1.5f;
 	style.MarkerSize = 4;
 	ImVec4 black = ImVec4(0.25, 0.25, 0.25, 0.75);
-	ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 2, black, 0.0f, black);
-	ImPlot::SetupAxes("r", "λ"); //λ
-	ImPlot::SetupAxesLimits(amu_min, amu_max + 0.05, -5.1, 1.1);
-	//ImPlot::SetupAxesLimits(amu_min, amu_max + 0.05, -5, 1);
+	ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1, black, 0.0f, black);
+	ImPlot::SetupAxes("r", "x"); //λ
+	//ImPlot::SetupAxesLimits(amu_min, amu_max + 0.05, -5.1, 1.1);
+	ImPlot::SetupAxesLimits(amu_min, amu_max + 0.05, -0.05, 1.05);
 
 	double HorizontalAxisLabelPositions[9] = { 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4 };
-	//const char* HorizontalAxisLabels[7] = { "3.5", "3.6", "3.7", "3.8", "3.9", "4" };
-	double VerticalAxisLabelPositions[7] = {-5, -4, -3, -3, -1, 0, 1};
-	//const char* VerticalAxisLabels[6] = { "0", "0.2", "0.4", "0.6", "0.8", "1" };
-	ImPlot::SetupAxisTicks(ImAxis_X1, HorizontalAxisLabelPositions, 9); // , HorizontalAxisLabels);
-	ImPlot::SetupAxisTicks(ImAxis_Y1, VerticalAxisLabelPositions, 7); // , VerticalAxisLabels);
+	//double HorizontalAxisLabelPositions[7] = { 3.5, 3.6, 3.7, 3.8, 3.9, 4};
+	//double VerticalAxisLabelPositions[7] = {-5, -4, -3, -3, -1, 0, 1};
+	double VerticalAxisLabelPositions[6] = { 0, 0.2, 0.4, 0.6, 0.8, 1 };
+	ImPlot::SetupAxisTicks(ImAxis_X1, HorizontalAxisLabelPositions, 9);
+	ImPlot::SetupAxisTicks(ImAxis_Y1, VerticalAxisLabelPositions, 6);
 
-	//ImPlot::PlotScatter("Data 1", mus1, xs, anumber);
-	ImPlot::PlotLine("Data 2", mus2, exps, amu_step);
-	ImPlot::PlotLine("##", mus2, 0, amu_step);
+	ImPlot::PlotScatter("Data 1", mus1, xs, anumber);
+	//ImPlot::PlotLine("Data 2", mus2, exps, amu_step);
+	//ImPlot::PlotLine("##", mus2, 0, amu_step);
 	ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
 	ImPlot::PopStyleVar();
 
-	/* line for x-axis */
+	/* envelope 
+	float upper_envelope[amu_step], lower_envelope[amu_step], difference[amu_step] = {0};
+	for (int i = 0; i < amu_step; i++) {
+		float r = amu_min + i * (amu_max - amu_min) / (amu_step - 1);
+		upper_envelope[i] = (og_step((r - alpha) / (2 * r), r) - alpha * ((r - alpha) / (2 * r))) / (1 - alpha);
+		lower_envelope[i] = (og_step(upper_envelope[i], r) - alpha * upper_envelope[i]) / (1 - alpha);
+	}
+	ImPlot::PushStyleVar(ImPlotStyleVar_LineWeight, 5.0f);
+	ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0, 0, 0, 1));
+	ImPlot::PlotLine("Upper Envelope", mus2, upper_envelope, amu_step);
+	ImPlot::PlotLine("Lower Envelope", mus2, lower_envelope, amu_step);
+
+	/* line for x-axis 
 	float zeros[amu_step] = { 0 };
 	ImPlot::PushStyleVar(ImPlotStyleVar_LineWeight, 3.0f);
 	ImPlot::PushStyleColor(ImPlotCol_Line, black);
 	ImPlot::PlotLine("Data 1", mus2, zeros, amu_step);
+	*/
 }
 
 void coupledlogistic() {
@@ -498,7 +517,6 @@ void coupledlogistic() {
 
 	int mudummy = 0;
 	int expdummy = 0;
-	float alpha = 0.1;
 	for (float mu = amu_min; mu <= amu_max; mu += ((amu_max - amu_min) / (float)amu_step)) {
 		// simulating the network
 		vector<float> blacklist = { 0 };
@@ -536,7 +554,7 @@ float bmu_min = 0;
 float bmu_max = 4;
 
 //starting value of x
-float bx_0 = 0.2;
+float bx_0 = 0.1;
 float by_0 = 0.5;
 
 //resolution
@@ -553,12 +571,14 @@ void phasefunc(float* xs, float* ys, float a) {
 	ImGui::StyleColorsLight();
 	ImPlot::StyleColorsLight();
 	ImPlotStyle& style = ImPlot::GetStyle();
+	style.MajorGridSize = ImVec2(5.0f, 5.0f);
+	style.MinorGridSize = ImVec2(5.0f, 5.0f);
 	style.PlotBorderSize = 1;
 	style.LineWeight = 1.5f;
 	style.MarkerSize = 4;
 	ImVec4 black = ImVec4(0.25, 0.25, 0.25, 0.75);
-	ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 30, black, 0.0f, black);
-	ImPlot::SetupAxes("x", "y"); //λ
+	ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 25, black, 0.0f, black);
+	ImPlot::SetupAxes("x", "y");
 	ImPlot::SetupAxesLimits(-0.05, 1.05, -0.05, 1.05);
 
 	double HorizontalAxisLabelPositions[15] = { 0, 0.2, 0.4, 0.6, 0.8, 1};
@@ -579,7 +599,7 @@ void phasediagram() {
 	static float xs[bnumber], ys[bnumber];
 	
 	float alpha = 0.1;
-	float mu = 3.2;
+	float mu = 3.5;
 
 	// simulating the network12
 

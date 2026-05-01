@@ -329,8 +329,8 @@ LRESULT CALLBACK DummyWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 // Save the plot to a file instead of rendering to screen
 bool GraphToFile(void (*func)(float*, float*, float), float* mus, float* xs, float number, const char* filename) 
 {
-    const UINT width = 8192;
-    const UINT height = 8192;
+    const UINT width = 4096;
+    const UINT height = 4096;
 
     //Pick a valid hardware adapter
     IDXGIFactory5* factory = nullptr;
@@ -453,7 +453,7 @@ if (FAILED(hr) || readbackBuffer == nullptr) {
     ImGui::SetCurrentContext(ctx);
     ImPlot::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
-    io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/arial.ttf", 144.0f);
+    io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/arial.ttf", 72.0f);
     io.DisplaySize = ImVec2((float)width, (float)height);
 
     ImGui_ImplDX12_InitInfo init_info = {};

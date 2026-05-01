@@ -78,7 +78,7 @@ bool search(vector<float> a, float b) {
 /* initialising variables */
 
 // mu
-float mu_min = 2;
+float mu_min = 0;
 float mu_max = 4;
 int const mu_step = 5000;
 
@@ -110,26 +110,28 @@ void logfunc(float* xs, float* exps, float a) {
 	ImGui::StyleColorsLight();
 	ImPlot::StyleColorsLight();
 	ImPlotStyle& style = ImPlot::GetStyle();
+	style.MajorGridSize = ImVec2(5.0f, 5.0f);
+	style.MinorGridSize = ImVec2(5.0f, 5.0f);
 	style.PlotBorderSize = 1;
 	style.LineWeight = 1.5f;
 	style.MarkerSize = 4;
 	ImVec4 black = ImVec4(0.25, 0.25, 0.25, 0.75);
-	ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 2, ImVec4(0.25, 0.25, 0.5, 0.1), 0.0f, ImVec4(0, 0, 0, 0));
-	ImPlot::SetupAxes("r", "x");
+	ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1, black, 0.0f, ImVec4(0, 0, 0, 0));
+	ImPlot::SetupAxes("r", "λ"); //λ
 	//ImPlot::SetupAxesLimits(mu_min, mu_max + 0.05, -0.05, 1.05);
-	ImPlot::SetupAxesLimits(mu_min, mu_max + 0.05, -0.05, 1.05);
+	ImPlot::SetupAxesLimits(mu_min, mu_max + 0.025, -5-0.05, 1.05);
 	
-	double HorizontalAxisLabelPositions[5] = {2, 2.5, 3, 3.5, 4 };
-	double VerticalAxisLabelPositions[6] = {0, 0.2, 0.4, 0.6, 0.8, 1};
-	ImPlot::SetupAxisTicks(ImAxis_X1, HorizontalAxisLabelPositions, 5);
-	ImPlot::SetupAxisTicks(ImAxis_Y1, VerticalAxisLabelPositions, 6);
+	double HorizontalAxisLabelPositions[9] = {0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4 };
+	double VerticalAxisLabelPositions[7] = {-5, -4, -3, -2, -1, 0, 1};
+	ImPlot::SetupAxisTicks(ImAxis_X1, HorizontalAxisLabelPositions, 9);
+	ImPlot::SetupAxisTicks(ImAxis_Y1, VerticalAxisLabelPositions, 7);
 	//ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2(10, 10));
 	//ImPlot::PushStyleVar(ImPlotStyleVar_LabelPadding, ImVec2(10, 10));
 	
-	ImPlot::PlotScatter("Data 1", mus1, xs, number);
-	//ImPlot::PlotLine("Data 2", mus2, exps, mu_step);
+	//ImPlot::PlotScatter("Data 1", mus1, xs, number);
+	ImPlot::PlotLine("Data 2", mus2, exps, mu_step);
 	
-	/* envelope */
+	/* envelope
 	float upper_envelope[mu_step], lower_envelope[mu_step] = {0};
 	for (int i = 0; i < mu_step; i++) {
 		float r = mu_min + i * (mu_max - mu_min) / (mu_step - 1);
@@ -141,6 +143,7 @@ void logfunc(float* xs, float* exps, float a) {
 	ImPlot::PlotLine("Upper Envelope", mus2, upper_envelope, mu_step);
 	ImPlot::PlotLine("Lower Envelope", mus2, lower_envelope, mu_step);
 
+
 	
 	/* line for x-axis 
 	float zeros[mu_step] = { 0 };
@@ -148,6 +151,7 @@ void logfunc(float* xs, float* exps, float a) {
 	ImPlot::PushStyleColor(ImPlotCol_Line, black);
 	ImPlot::PlotLine("Data 1", mus2, zeros, mu_step);
 	*/
+	
 
 	ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
 	ImPlot::PopStyleVar();
