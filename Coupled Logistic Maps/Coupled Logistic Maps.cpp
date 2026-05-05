@@ -13,21 +13,21 @@
 using namespace std;
 
 string modes[15]{
-	"cobweb",							// 0
-	"logistic",							// 1
-	"population",						// 2
-	"gillespie",						// 3
-	"coupling",							// 4
-	"stochastic",						// 5
-	"matrix coupling",					// 6
-	"coupled cobweb",					// 7
-	"separated step coupled",			// 8
-	"time step coupled",				// 9
-	"gauss population",					//10
-	"coupled logistic map",				//11
-	"phase diagram",					//12
-	"coupled logistic map animated",	//13
-	"critical points"					//14
+	"cobweb",								// 0
+	"bifurcation diagram",					// 1
+	"population",							// 2
+	"gillespie",							// 3
+	"coupling",								// 4
+	"stochastic",							// 5
+	"matrix coupling",						// 6
+	"coupled cobweb",						// 7
+	"separated step coupled",				// 8
+	"time step coupled",					// 9
+	"gauss population",						//10
+	"coupled bifurcation diagram",			//11
+	"phase diagram",						//12
+	"coupled bifurcation diagram animated",	//13
+	"critical points"						//14
 };
 
 int main()
