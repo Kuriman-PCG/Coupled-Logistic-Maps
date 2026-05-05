@@ -428,10 +428,10 @@ int const amu_step = 5000;
 
 //starting value of x
 float ax_0 = 0.1;
-float ay_0 = 0.9;
+float ay_0 = 0.2;
 
 // alpha
-float alpha = 0.05;
+float alpha = 0.9;
 
 //resolution
 int const no_of_steps = 5000;
@@ -472,7 +472,7 @@ void couplogfunc(float* xs, float* exps, float a) {
 	style.PlotBorderSize = 1;
 	style.LineWeight = 1.5f;
 	style.MarkerSize = 4;
-	ImVec4 black = ImVec4(0.25, 0.25, 0.25, 0.75);
+	ImVec4 black = ImVec4(0.25, 0.25, 0.5, 0.75);
 	ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1, black, 0.0f, black);
 	ImPlot::SetupAxes("r", "x"); //λ
 	//ImPlot::SetupAxesLimits(amu_min, amu_max + 0.05, -5.1, 1.1);
@@ -481,9 +481,9 @@ void couplogfunc(float* xs, float* exps, float a) {
 	double HorizontalAxisLabelPositions[9] = { 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4 };
 	//double HorizontalAxisLabelPositions[7] = { 3.5, 3.6, 3.7, 3.8, 3.9, 4};
 	//double VerticalAxisLabelPositions[7] = {-5, -4, -3, -3, -1, 0, 1};
-	double VerticalAxisLabelPositions[6] = { 0, 0.2, 0.4, 0.6, 0.8, 1 };
+	double VerticalAxisLabelPositions[8] = { -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1 };
 	ImPlot::SetupAxisTicks(ImAxis_X1, HorizontalAxisLabelPositions, 9);
-	ImPlot::SetupAxisTicks(ImAxis_Y1, VerticalAxisLabelPositions, 6);
+	ImPlot::SetupAxisTicks(ImAxis_Y1, VerticalAxisLabelPositions, 8);
 
 	ImPlot::PlotScatter("Data 1", mus1, xs, anumber);
 	//ImPlot::PlotLine("Data 2", mus2, exps, amu_step);
@@ -491,7 +491,7 @@ void couplogfunc(float* xs, float* exps, float a) {
 	ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.00005f);
 	ImPlot::PopStyleVar();
 
-	/* envelope 
+	/* envelope */ 
 	float upper_envelope[amu_step], lower_envelope[amu_step], difference[amu_step] = {0};
 	for (int i = 0; i < amu_step; i++) {
 		float r = amu_min + i * (amu_max - amu_min) / (amu_step - 1);
@@ -537,7 +537,7 @@ void coupledlogistic() {
 				xs[mudummy] = x[t];
 				mudummy++;
 				blacklist.push_back(atruncate(x[t]));
-				exp += log(abs( (mu * (1 - 2 * x[t]) - alpha) * (mu * (1 - 2 * y[t]) - alpha) - pow(alpha,2) ));
+				exp += log(abs( mu * mu * (1 - 2 * alpha) * (1 - 2 * x[t]) * (1 - 2 * y[t]) ));
 			}
 		}
 		exps[expdummy++] = exp / (float)(no_of_steps - cutoff);

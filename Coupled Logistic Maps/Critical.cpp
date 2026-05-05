@@ -103,7 +103,7 @@ void plotfunc(float* mus, float* alphas, float toggle) {
 	}
 	if (toggle < 0) {
 		ImPlot::SetupAxes("alpha", "r_infinity");
-		ImPlot::SetupAxesLimits(-0.01, 0.51, 2.45, 3.55);
+		ImPlot::SetupAxesLimits(-0.01, 0.51, 2.7, 4.05);
 
 	}
 
@@ -148,6 +148,7 @@ void criticalvalues() {
 		double r_max = 4;
 		//per x_0
 		for (int xi = 1; xi <= 50; xi++) {
+
 			x_0 = xi / 100.0f;
 			//per y_0
 			for (int yi = 1; yi <= 50; yi++) {
@@ -165,12 +166,12 @@ void criticalvalues() {
 						double exp = 0.0f;
 						// per n
 						for (int k = 0; k < no_of_steps; k++) {
-							new_x = r * x * (1 - x) - alpha * (x - y);
-							new_y = r * y * (1 - y) + alpha * (x - y);
+							new_x = (1 - alpha) * r * x * (1 - x) + alpha * r * y * (1 - y);
+							new_y = (1 - alpha) * r * y * (1 - y) + alpha * r * x * (1 - x);
 							x = new_x;
 							y = new_y;
 
-							if (k > 50) exp += log(fabs((r * (1 - 2 * new_x) - alpha) * (r * (1 - 2 * new_y) - alpha) - alpha * alpha));
+							if (k > 50) exp += log(fabs( (1 - 2 * alpha) * r * r * (1 - 2 * new_x) * (1 - 2 * new_y) ));
 						}
 						exp = exp / no_of_steps;
 						//std::cout << "(" << r << ", " << alpha << ", " << exp << ")" << endl;
